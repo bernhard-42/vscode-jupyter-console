@@ -140,10 +140,10 @@ All commands are accessible via:
 
 | Command `Jupyter Console: ...`       | Keyboard Shortcut      | Description                                             |
 | ------------------------------------ | ---------------------- | ------------------------------------------------------- |
-| `... Run Cell and Advance`           | `        Ctrl + Enter` | Execute cell, move to next cell                         |
-| `... Run Cell`                       | `Shift + Ctrl + Enter` | Execute current cell (between `# %%` markers)           |
-| `... Run Selection/Line and Advance` | `        Alt  + Enter` | Execute selection/line, move cursor after               |
-| `... Run Selection/Line`             | `Shift + Alt  + Enter` | Execute selected code (or current line if no selection) |
+| `... Run Cell and Advance`           | `Ctrl + Enter`         | Execute cell, move to next cell                         |
+| `... Run Cell`                       | `Ctrl + Shift + Enter` | Execute current cell (between `# %%` markers)           |
+| `... Run Selection/Line and Advance` | `Alt  + Enter`         | Execute selection/line, move cursor after               |
+| `... Run Selection/Line`             | `Alt  + Shift + Enter` | Execute selected code (or current line if no selection) |
 
 **Additional Shortcut:**
 
