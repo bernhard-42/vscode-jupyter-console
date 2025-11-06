@@ -8,6 +8,15 @@ export interface Cell {
 
 export class CellDetector {
   /**
+   * Helper to move cursor to a specific line and reveal it
+   */
+  private static moveCursorToLine(editor: vscode.TextEditor, lineNumber: number): void {
+    const newPosition = new vscode.Position(lineNumber, 0);
+    editor.selection = new vscode.Selection(newPosition, newPosition);
+    editor.revealRange(new vscode.Range(newPosition, newPosition));
+  }
+
+  /**
    * Find all cell boundaries in the document
    */
   static findCellBoundaries(document: vscode.TextDocument): number[] {
@@ -102,10 +111,7 @@ export class CellDetector {
   static moveCursorToNextLine(editor: vscode.TextEditor): void {
     const currentLine = editor.selection.active.line;
     const nextLine = Math.min(currentLine + 1, editor.document.lineCount - 1);
-
-    const newPosition = new vscode.Position(nextLine, 0);
-    editor.selection = new vscode.Selection(newPosition, newPosition);
-    editor.revealRange(new vscode.Range(newPosition, newPosition));
+    this.moveCursorToLine(editor, nextLine);
   }
 
   /**
@@ -120,10 +126,7 @@ export class CellDetector {
       endPosition.line + 1,
       editor.document.lineCount - 1
     );
-    const newPosition = new vscode.Position(nextLine, 0);
-
-    editor.selection = new vscode.Selection(newPosition, newPosition);
-    editor.revealRange(new vscode.Range(newPosition, newPosition));
+    this.moveCursorToLine(editor, nextLine);
   }
 
   /**
@@ -150,9 +153,7 @@ export class CellDetector {
             targetLine = nextCellStart + 1;
           }
 
-          const newPosition = new vscode.Position(targetLine, 0);
-          editor.selection = new vscode.Selection(newPosition, newPosition);
-          editor.revealRange(new vscode.Range(newPosition, newPosition));
+          this.moveCursorToLine(editor, targetLine);
         }
         break;
       }

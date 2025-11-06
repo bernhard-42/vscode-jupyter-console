@@ -82,7 +82,7 @@ export class CodeExecutor {
     switch (type) {
       case ExecutionType.Line:
         code = CellDetector.getCurrentLine(editor);
-        advancer = CellDetector.moveCursorToNextLine;
+        advancer = (ed) => CellDetector.moveCursorToNextLine(ed);
         break;
 
       case ExecutionType.Selection:
@@ -92,7 +92,7 @@ export class CodeExecutor {
           this.executeAndAdvance(ExecutionType.Line, advance);
           return;
         }
-        advancer = CellDetector.moveCursorToEndOfSelection;
+        advancer = (ed) => CellDetector.moveCursorToEndOfSelection(ed);
         break;
 
       case ExecutionType.Cell:
@@ -102,7 +102,7 @@ export class CodeExecutor {
           vscode.window.showWarningMessage("No cell found at cursor position");
           return;
         }
-        advancer = CellDetector.moveCursorToNextCell;
+        advancer = (ed) => CellDetector.moveCursorToNextCell(ed);
         break;
     }
 
