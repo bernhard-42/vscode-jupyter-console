@@ -198,7 +198,7 @@
     "pretest": "yarn compile && yarn lint",
     "lint": "eslint src --ext ts",
     "package": "vsce package --yarn",
-    "release": "VERSION=$(node -p \"require('./package.json').version\") && git add . && git commit -m \"building release $VERSION\" && git tag \"v$VERSION\""
+    "release": "VERSION=$(node -p \"require('./package.json').version\") && git add . && (git diff --cached --quiet || git commit -m \"building release $VERSION\") && git tag \"v$VERSION\""
   },
   "devDependencies": {
     "@types/node": "18.x",
