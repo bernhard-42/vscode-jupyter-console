@@ -2,7 +2,7 @@
   "name": "vscode-jupyter-console",
   "displayName": "Jupyter Console",
   "description": "Run Python code with Jupyter kernel and jupyter-console integration",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "publisher": "bernhard-42",
   "license": "MIT",
   "repository": "https://github.com/bernhard-42/vscode-jupyter-console",
