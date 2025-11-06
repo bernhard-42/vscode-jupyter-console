@@ -7,7 +7,21 @@ Connects to a Jupyter kernel's iopub channel and displays all outputs.
 import sys
 import json
 import zmq
-from datetime import datetime
+
+
+def green(text):
+    """Green text for success/input"""
+    return f"\033[32m{text}\033[0m"
+
+
+def red(text):
+    """Red text for errors/output labels"""
+    return f"\033[31m{text}\033[0m"
+
+
+def dim(text):
+    """Dimmed/gray text for truncation notices"""
+    return f"\033[2m{text}\033[0m"
 
 
 def main():
@@ -82,7 +96,7 @@ def main():
                 lines = code.split("\n")
 
                 # Green color for "In [...]"
-                in_label = f"\033[32mIn [{execution_count}]\033[0m"
+                in_label = green(f"In [{execution_count}]")
 
                 if len(lines) == 1:
                     print(f"{in_label}: {lines[0]}")
@@ -98,7 +112,7 @@ def main():
                         print(f"   ...: {line}")
                     # Show how many lines were truncated
                     remaining = len(lines) - max_input_lines
-                    print(f"\033[2m   ...: [+ {remaining} lines]\033[0m")
+                    print(dim(f"   ...: [+ {remaining} lines]"))
 
                 # Reset execution tracking
                 is_executing = True
@@ -118,7 +132,7 @@ def main():
                 if "text/plain" in data:
                     result = data["text/plain"]
                     # Red color for "Out[...]"
-                    out_label = f"\033[31mOut[{execution_count}]\033[0m"
+                    out_label = red(f"Out[{execution_count}]")
                     print(f"{out_label}: {result}")
                     print()
                     sys.stdout.flush()
@@ -144,6 +158,10 @@ def main():
                         print(line)
                 print()
 
+                # Show red X for errors (especially for interrupts that arrive after green checkmark)
+                print(red("✗"))
+                print()
+
                 # Mark that this execution had an error
                 execution_had_error = True
                 sys.stdout.flush()
@@ -155,10 +173,10 @@ def main():
                     # Execution completed - show status icon
                     if execution_had_error:
                         # Red X for error
-                        print("\033[31m✗\033[0m")
+                        print(red("✗"))
                     else:
                         # Green checkmark for success
-                        print("\033[32m✓\033[0m")
+                        print(green("✓"))
                     print()
                     is_executing = False
                     execution_had_error = False

@@ -1,7 +1,8 @@
 import * as vscode from "vscode";
 import * as cp from "child_process";
-import * as fs from "fs";
 import * as path from "path";
+import { Logger } from "./logger";
+import { getKernelConnectionTimeout, getKernelOperationWait } from "./constants";
 
 export class KernelManager {
   private kernelProcess: cp.ChildProcess | null = null;
@@ -25,7 +26,7 @@ export class KernelManager {
       // Start kernel using jupyter kernel
       const args = ["-m", "jupyter", "kernel", "--kernel=python3"];
 
-      console.log(
+      Logger.log(
         `Starting kernel with command: ${this.pythonPath} ${args.join(" ")}`
       );
 
@@ -38,11 +39,11 @@ export class KernelManager {
       let errorOutput = "";
       this.kernelProcess.stderr?.on("data", (data) => {
         errorOutput += data.toString();
-        console.error("Kernel stderr:", data.toString());
+        Logger.error("Kernel stderr:", data.toString());
       });
 
       this.kernelProcess.stdout?.on("data", (data) => {
-        console.log("Kernel stdout:", data.toString());
+        Logger.log(`Kernel stdout: ${data.toString()}`);
       });
 
       // Wait for connection file to be created
@@ -89,9 +90,8 @@ export class KernelManager {
         let match = buffer.match(/Connection file:\s*(\S+\.json)/);
         if (match) {
           this.connectionFile = match[1];
-          console.log(
-            `Found connection file in ${source}:`,
-            this.connectionFile
+          Logger.log(
+            `Found connection file in ${source}: ${this.connectionFile}`
           );
           return true;
         }
@@ -115,9 +115,8 @@ export class KernelManager {
               filename
             );
           }
-          console.log(
-            `Found connection file in ${source}:`,
-            this.connectionFile
+          Logger.log(
+            `Found connection file in ${source}: ${this.connectionFile}`
           );
           return true;
         }
@@ -178,14 +177,14 @@ export class KernelManager {
         }
       });
 
-      // Timeout after 10 seconds
+      // Timeout after KERNEL_CONNECTION_TIMEOUT
       setTimeout(() => {
         reject(
           new Error(
             `Timeout waiting for kernel to start.\nStderr: ${stderrBuffer}\nStdout: ${stdoutBuffer}`
           )
         );
-      }, 10000);
+      }, getKernelConnectionTimeout());
     });
   }
 
@@ -234,7 +233,7 @@ export class KernelManager {
    */
   async restartKernel(): Promise<void> {
     this.stopKernel();
-    await new Promise((resolve) => setTimeout(resolve, 1000)); // Wait a bit
+    await new Promise((resolve) => setTimeout(resolve, getKernelOperationWait())); // Wait for kernel to fully stop
     await this.startKernel();
   }
 

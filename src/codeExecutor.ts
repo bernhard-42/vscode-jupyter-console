@@ -2,7 +2,7 @@ import * as vscode from "vscode";
 import { ConsoleManager } from "./consoleManager";
 import { CellDetector } from "./cellDetector";
 import { KernelClient } from "./kernelClient";
-import { KERNEL_OPERATION_WAIT } from "./constants";
+import { getKernelOperationWait } from "./constants";
 
 enum ExecutionType {
   Line,
@@ -42,7 +42,7 @@ export class CodeExecutor {
         await vscode.commands.executeCommand("jupyterConsole.startKernel");
 
         // Wait for kernel to be ready and client to be set
-        await new Promise(resolve => setTimeout(resolve, KERNEL_OPERATION_WAIT));
+        await new Promise(resolve => setTimeout(resolve, getKernelOperationWait()));
 
         // Check if kernel client is now available
         if (!this.kernelClient || !this.kernelClient.isKernelConnected()) {

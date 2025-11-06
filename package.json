@@ -21,7 +21,43 @@
           "type": "number",
           "default": 10,
           "description": "Maximum number of input code lines to display before truncating in the Jupyter Output terminal. Set to 0 to show all lines.",
-          "minimum": 0
+          "minimum": 0,
+          "order": 1
+        },
+        "jupyterConsole.advanced.viewerTerminalStartDelay": {
+          "type": "number",
+          "default": 300,
+          "description": "[Advanced] Delay (in milliseconds) before starting the output viewer terminal. Increase on slower machines.",
+          "minimum": 0,
+          "order": 10
+        },
+        "jupyterConsole.advanced.consoleTerminalStartDelay": {
+          "type": "number",
+          "default": 500,
+          "description": "[Advanced] Delay (in milliseconds) before starting the console terminal. Increase on slower machines.",
+          "minimum": 0,
+          "order": 11
+        },
+        "jupyterConsole.advanced.kernelOperationWait": {
+          "type": "number",
+          "default": 1000,
+          "description": "[Advanced] Wait time (in milliseconds) for kernel operations like restart. Increase on slower machines.",
+          "minimum": 0,
+          "order": 12
+        },
+        "jupyterConsole.advanced.kernelConnectionTimeout": {
+          "type": "number",
+          "default": 10000,
+          "description": "[Advanced] Timeout (in milliseconds) for kernel connection file to appear. Increase on slower machines.",
+          "minimum": 1000,
+          "order": 13
+        },
+        "jupyterConsole.advanced.codeExecutionTimeout": {
+          "type": "number",
+          "default": 30000,
+          "description": "[Advanced] Timeout (in milliseconds) for code execution to complete. Increase for long-running code.",
+          "minimum": 1000,
+          "order": 14
         }
       }
     },
@@ -70,6 +106,10 @@
       {
         "command": "jupyterConsole.runCell",
         "title": "Jupyter Console: Run Cell"
+      },
+      {
+        "command": "jupyterConsole.runCellAndAdvance",
+        "title": "Jupyter Console: Run Cell and Advance"
       }
     ],
     "submenus": [
@@ -138,6 +178,12 @@
         "command": "jupyterConsole.runCell",
         "key": "ctrl+alt+c",
         "mac": "cmd+alt+c",
+        "when": "editorTextFocus && editorLangId == python"
+      },
+      {
+        "command": "jupyterConsole.runCellAndAdvance",
+        "key": "ctrl+alt+shift+c",
+        "mac": "cmd+alt+shift+c",
         "when": "editorTextFocus && editorLangId == python"
       },
       {

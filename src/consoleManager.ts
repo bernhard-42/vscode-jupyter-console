@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import * as path from "path";
 import { KernelManager } from "./kernelManager";
+import { getViewerTerminalStartDelay, getConsoleTerminalStartDelay } from "./constants";
 
 export class ConsoleManager {
   private viewerTerminal: vscode.Terminal | null = null;
@@ -90,68 +91,85 @@ export class ConsoleManager {
    * Can be called to reconnect to an existing kernel
    */
   async startConsole(): Promise<void> {
-    if (!this.kernelManager.isRunning()) {
-      vscode.window.showErrorMessage(
-        "No kernel is running. Start a kernel first."
-      );
-      return;
-    }
+    try {
+      if (!this.kernelManager.isRunning()) {
+        throw new Error("No kernel is running. Start a kernel first.");
+      }
 
-    const connectionFile = this.kernelManager.getConnectionFile();
-    if (!connectionFile) {
-      vscode.window.showErrorMessage("Could not find kernel connection file");
-      return;
-    }
+      const connectionFile = this.kernelManager.getConnectionFile();
+      if (!connectionFile) {
+        throw new Error("Could not find kernel connection file");
+      }
 
-    // Close existing terminals if any (allows reconnecting)
-    if (this.viewerTerminal) {
-      this.viewerTerminal.dispose();
-      this.viewerTerminal = null;
-    }
-    if (this.consoleTerminal) {
-      this.consoleTerminal.dispose();
-      this.consoleTerminal = null;
-    }
-
-    const pythonPath = this.kernelManager.getPythonPath();
-
-    // Get truncate lines configuration
-    const config = vscode.workspace.getConfiguration("jupyterConsole");
-    const truncateLines = config.get<number>("truncateInputLinesMax", 10);
-
-    // Create iopub viewer terminal (shown by default)
-    this.viewerTerminal = vscode.window.createTerminal({
-      name: "Jupyter Output",
-      hideFromUser: false,
-    });
-
-    // Start the iopub viewer
-    setTimeout(() => {
+      // Close existing terminals if any (allows reconnecting)
       if (this.viewerTerminal) {
-        const viewerScript = path.join(
-          this.extensionPath,
-          "out",
-          "iopub_viewer.py"
-        );
-        const command = `"${pythonPath}" "${viewerScript}" "${connectionFile}" ${truncateLines}`;
-        this.viewerTerminal.sendText(command, true);
-        this.viewerTerminal.show();
+        this.viewerTerminal.dispose();
+        this.viewerTerminal = null;
       }
-    }, 300);
-
-    // Create Jupyter console terminal (separate, not shown by default)
-    this.consoleTerminal = vscode.window.createTerminal({
-      name: "Jupyter Console",
-      hideFromUser: false,
-    });
-
-    // Start jupyter console
-    setTimeout(() => {
       if (this.consoleTerminal) {
-        const command = `"${pythonPath}" -m jupyter console --existing "${connectionFile}"`;
-        this.consoleTerminal.sendText(command, true);
+        this.consoleTerminal.dispose();
+        this.consoleTerminal = null;
       }
-    }, 500);
+
+      const pythonPath = this.kernelManager.getPythonPath();
+
+      // Get truncate lines configuration
+      const config = vscode.workspace.getConfiguration("jupyterConsole");
+      const truncateLines = config.get<number>("truncateInputLinesMax", 10);
+
+      // Create iopub viewer terminal (shown by default)
+      try {
+        this.viewerTerminal = vscode.window.createTerminal({
+          name: "Jupyter Output",
+          hideFromUser: false,
+        });
+      } catch (error) {
+        throw new Error(`Failed to create output viewer terminal: ${error}`);
+      }
+
+      // Start the iopub viewer
+      setTimeout(() => {
+        if (this.viewerTerminal) {
+          const viewerScript = path.join(
+            this.extensionPath,
+            "out",
+            "iopub_viewer.py"
+          );
+          const command = `"${pythonPath}" "${viewerScript}" "${connectionFile}" ${truncateLines}`;
+          this.viewerTerminal.sendText(command, true);
+          this.viewerTerminal.show();
+        }
+      }, getViewerTerminalStartDelay());
+
+      // Create Jupyter console terminal (separate, not shown by default)
+      try {
+        this.consoleTerminal = vscode.window.createTerminal({
+          name: "Jupyter Console",
+          hideFromUser: false,
+        });
+      } catch (error) {
+        throw new Error(`Failed to create console terminal: ${error}`);
+      }
+
+      // Start jupyter console
+      setTimeout(() => {
+        if (this.consoleTerminal) {
+          const command = `"${pythonPath}" -m jupyter console --existing "${connectionFile}"`;
+          this.consoleTerminal.sendText(command, true);
+        }
+      }, getConsoleTerminalStartDelay());
+    } catch (error) {
+      // Clean up terminals on error
+      if (this.viewerTerminal) {
+        this.viewerTerminal.dispose();
+        this.viewerTerminal = null;
+      }
+      if (this.consoleTerminal) {
+        this.consoleTerminal.dispose();
+        this.consoleTerminal = null;
+      }
+      throw error;
+    }
   }
 
   /**

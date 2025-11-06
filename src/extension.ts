@@ -13,6 +13,49 @@ let statusBarManager: StatusBarManager;
 let kernelClient: KernelClient | null = null;
 
 /**
+ * Connect kernel client and set up terminals
+ */
+async function connectKernelClient(): Promise<void> {
+  const connectionFile = kernelManager.getConnectionFile();
+  if (!connectionFile) {
+    throw new Error("Connection file not available");
+  }
+
+  kernelClient = new KernelClient();
+  await kernelClient.connect(connectionFile);
+  codeExecutor.setKernelClient(kernelClient);
+
+  // Set up status callback to update status bar during execution
+  kernelClient.setStatusCallback((state) => {
+    if (state === "busy") {
+      statusBarManager.setState(KernelState.Busy);
+    } else if (state === "idle") {
+      statusBarManager.setState(KernelState.Running);
+    }
+  });
+
+  Logger.log("Kernel client connected");
+
+  // Automatically start terminals (iopub viewer + jupyter console)
+  await consoleManager.startConsole();
+}
+
+/**
+ * Cleanup: disconnect kernel client and close terminals
+ */
+async function cleanupKernelClient(): Promise<void> {
+  // Close terminals
+  consoleManager.closeConsole();
+
+  // Disconnect kernel client
+  if (kernelClient) {
+    await kernelClient.disconnect();
+    kernelClient = null;
+    codeExecutor.setKernelClient(null);
+  }
+}
+
+/**
  * Get the active Python interpreter path
  */
 async function getPythonPath(): Promise<string> {
@@ -46,7 +89,7 @@ async function getPythonPath(): Promise<string> {
     // Last resort: use 'python' from PATH
     return "python3";
   } catch (error) {
-    console.error("Error getting Python path:", error);
+    Logger.error("Error getting Python path:", error);
     return "python3";
   }
 }
@@ -122,28 +165,7 @@ export async function activate(context: vscode.ExtensionContext) {
             statusBarManager.setState(KernelState.Starting);
 
             await kernelManager.startKernel();
-
-            // Connect kernel client for direct code execution
-            const connectionFile = kernelManager.getConnectionFile();
-            if (connectionFile) {
-              kernelClient = new KernelClient();
-              await kernelClient.connect(connectionFile);
-              codeExecutor.setKernelClient(kernelClient);
-
-              // Set up status callback to update status bar during execution
-              kernelClient.setStatusCallback((state) => {
-                if (state === "busy") {
-                  statusBarManager.setState(KernelState.Busy);
-                } else if (state === "idle") {
-                  statusBarManager.setState(KernelState.Running);
-                }
-              });
-
-              console.log("Kernel client connected");
-
-              // Automatically start terminals (iopub viewer + jupyter console)
-              await consoleManager.startConsole();
-            }
+            await connectKernelClient();
 
             statusBarManager.setState(KernelState.Running);
           } catch (error) {
@@ -157,16 +179,7 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
       vscode.commands.registerCommand("jupyterConsole.stopKernel", async () => {
         try {
-          // Close terminals
-          consoleManager.closeConsole();
-
-          // Disconnect kernel client
-          if (kernelClient) {
-            await kernelClient.disconnect();
-            kernelClient = null;
-            codeExecutor.setKernelClient(null);
-          }
-
+          await cleanupKernelClient();
           kernelManager.stopKernel();
           statusBarManager.setState(KernelState.Stopped);
         } catch (error) {
@@ -180,15 +193,7 @@ export async function activate(context: vscode.ExtensionContext) {
         "jupyterConsole.restartKernel",
         async () => {
           try {
-            // Close terminals
-            consoleManager.closeConsole();
-
-            // Disconnect kernel client
-            if (kernelClient) {
-              await kernelClient.disconnect();
-              kernelClient = null;
-              codeExecutor.setKernelClient(null);
-            }
+            await cleanupKernelClient();
 
             // Get the current Python interpreter before restarting
             const pythonPath = await getPythonPath();
@@ -197,28 +202,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
             statusBarManager.setState(KernelState.Starting);
             await kernelManager.restartKernel();
-
-            // Reconnect kernel client and restart terminals
-            const connectionFile = kernelManager.getConnectionFile();
-            if (connectionFile) {
-              kernelClient = new KernelClient();
-              await kernelClient.connect(connectionFile);
-              codeExecutor.setKernelClient(kernelClient);
-
-              // Set up status callback to update status bar during execution
-              kernelClient.setStatusCallback((state) => {
-                if (state === "busy") {
-                  statusBarManager.setState(KernelState.Busy);
-                } else if (state === "idle") {
-                  statusBarManager.setState(KernelState.Running);
-                }
-              });
-
-              console.log("Kernel client reconnected");
-
-              // Restart terminals (iopub viewer + jupyter console)
-              await consoleManager.startConsole();
-            }
+            await connectKernelClient();
 
             statusBarManager.setState(KernelState.Running);
           } catch (error) {
@@ -237,7 +221,7 @@ export async function activate(context: vscode.ExtensionContext) {
           if (kernelClient && kernelClient.isKernelConnected()) {
             // Use proper Jupyter protocol interrupt via control channel
             await kernelClient.interrupt();
-            console.log("Kernel interrupted via control channel");
+            Logger.log("Kernel interrupted via control channel");
           } else {
             // Fallback to process signal (less reliable)
             kernelManager.interruptKernel();
@@ -245,7 +229,7 @@ export async function activate(context: vscode.ExtensionContext) {
           // Return to running state after interrupt
           statusBarManager.setState(KernelState.Running);
         } catch (error) {
-          console.error("Failed to interrupt kernel:", error);
+          Logger.error("Failed to interrupt kernel:", error);
           vscode.window.showErrorMessage(`Failed to interrupt kernel: ${error}`);
         }
       })
@@ -300,6 +284,12 @@ export async function activate(context: vscode.ExtensionContext) {
       })
     );
 
+    context.subscriptions.push(
+      vscode.commands.registerCommand("jupyterConsole.runCellAndAdvance", () => {
+        codeExecutor.runCellAndAdvance();
+      })
+    );
+
     // Listen for Python interpreter changes
     Logger.log("Setting up Python interpreter change listener...");
     const pythonExtension = vscode.extensions.getExtension("ms-python.python");
@@ -317,21 +307,10 @@ export async function activate(context: vscode.ExtensionContext) {
             Logger.log(`New interpreter path: ${e.path}`);
 
             // Clean up without confirmation
-            // 1. Close terminals
-            if (consoleManager) {
-              consoleManager.closeConsole();
-              Logger.log("✓ Terminals closed");
-            }
+            await cleanupKernelClient();
+            Logger.log("✓ Terminals closed and kernel client disconnected");
 
-            // 2. Disconnect kernel client
-            if (kernelClient) {
-              await kernelClient.disconnect();
-              kernelClient = null;
-              codeExecutor.setKernelClient(null);
-              Logger.log("✓ Kernel client disconnected");
-            }
-
-            // 3. Stop kernel process
+            // Stop kernel process
             if (kernelManager && kernelManager.isRunning()) {
               kernelManager.stopKernel();
               Logger.log("✓ Kernel stopped");

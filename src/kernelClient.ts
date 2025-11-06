@@ -2,6 +2,8 @@ import * as zmq from "zeromq";
 import * as crypto from "crypto";
 import { v4 as uuidv4 } from "uuid";
 import * as fs from "fs";
+import { Logger } from "./logger";
+import { getCodeExecutionTimeout } from "./constants";
 
 interface ConnectionInfo {
   ip: string;
@@ -55,37 +57,76 @@ export class KernelClient {
    * Connect to a kernel using its connection file
    */
   async connect(connectionFile: string): Promise<void> {
-    // Read connection file
-    const connectionData = fs.readFileSync(connectionFile, "utf-8");
-    this.connectionInfo = JSON.parse(connectionData);
+    try {
+      // Read connection file
+      let connectionData: string;
+      try {
+        connectionData = fs.readFileSync(connectionFile, "utf-8");
+      } catch (error) {
+        throw new Error(`Failed to read connection file: ${error}`);
+      }
 
-    if (!this.connectionInfo) {
-      throw new Error("Failed to parse connection file");
+      // Parse connection file
+      try {
+        this.connectionInfo = JSON.parse(connectionData);
+      } catch (error) {
+        throw new Error(`Failed to parse connection file JSON: ${error}`);
+      }
+
+      if (!this.connectionInfo) {
+        throw new Error("Connection info is null after parsing");
+      }
+
+      // Create ZMQ sockets
+      this.shellSocket = new zmq.Dealer();
+      this.iopubSocket = new zmq.Subscriber();
+      this.controlSocket = new zmq.Dealer();
+
+      // Connect sockets
+      const shellAddr = `${this.connectionInfo.transport}://${this.connectionInfo.ip}:${this.connectionInfo.shell_port}`;
+      const iopubAddr = `${this.connectionInfo.transport}://${this.connectionInfo.ip}:${this.connectionInfo.iopub_port}`;
+      const controlAddr = `${this.connectionInfo.transport}://${this.connectionInfo.ip}:${this.connectionInfo.control_port}`;
+
+      try {
+        await this.shellSocket.connect(shellAddr);
+        await this.iopubSocket.connect(iopubAddr);
+        await this.controlSocket.connect(controlAddr);
+      } catch (error) {
+        throw new Error(`Failed to connect to kernel sockets: ${error}`);
+      }
+
+      // Subscribe to all messages on iopub
+      this.iopubSocket.subscribe();
+
+      this.isConnected = true;
+
+      // Start persistent iopub listener
+      this.startIopubListener();
+
+      Logger.log(`Connected to kernel: ${shellAddr}`);
+    } catch (error) {
+      // Clean up sockets on error
+      if (this.shellSocket) {
+        try {
+          this.shellSocket.close();
+        } catch {}
+        this.shellSocket = null;
+      }
+      if (this.iopubSocket) {
+        try {
+          this.iopubSocket.close();
+        } catch {}
+        this.iopubSocket = null;
+      }
+      if (this.controlSocket) {
+        try {
+          this.controlSocket.close();
+        } catch {}
+        this.controlSocket = null;
+      }
+      this.isConnected = false;
+      throw error;
     }
-
-    // Create ZMQ sockets
-    this.shellSocket = new zmq.Dealer();
-    this.iopubSocket = new zmq.Subscriber();
-    this.controlSocket = new zmq.Dealer();
-
-    // Connect sockets
-    const shellAddr = `${this.connectionInfo.transport}://${this.connectionInfo.ip}:${this.connectionInfo.shell_port}`;
-    const iopubAddr = `${this.connectionInfo.transport}://${this.connectionInfo.ip}:${this.connectionInfo.iopub_port}`;
-    const controlAddr = `${this.connectionInfo.transport}://${this.connectionInfo.ip}:${this.connectionInfo.control_port}`;
-
-    await this.shellSocket.connect(shellAddr);
-    await this.iopubSocket.connect(iopubAddr);
-    await this.controlSocket.connect(controlAddr);
-
-    // Subscribe to all messages on iopub
-    this.iopubSocket.subscribe();
-
-    this.isConnected = true;
-
-    // Start persistent iopub listener
-    this.startIopubListener();
-
-    console.log("Connected to kernel:", shellAddr);
   }
 
   /**
@@ -131,7 +172,7 @@ export class KernelClient {
             const callback = this.outputCallbacks.get(parentMsgId);
 
             if (callback) {
-              console.log(`Received message type: ${msgType}`, contentObj);
+              Logger.log(`Received message type: ${msgType}`);
 
               // Handle different output types
               if (msgType === "stream") {
@@ -155,17 +196,17 @@ export class KernelClient {
                 contentObj.execution_state === "idle"
               ) {
                 // Execution complete - signal completion and clean up
-                console.log("Execution complete, sending completion signal");
+                Logger.log("Execution complete, sending completion signal");
                 callback("__COMPLETE__");
                 this.outputCallbacks.delete(parentMsgId);
               }
             }
           } catch (error) {
-            console.error("Error processing iopub message:", error);
+            Logger.error("Error processing iopub message:", error);
           }
         }
       } catch (error) {
-        console.error("Iopub listener error:", error);
+        Logger.error("Iopub listener error:", error);
       } finally {
         this.iopubListenerRunning = false;
       }
@@ -266,27 +307,27 @@ export class KernelClient {
 
         // Check for completion signal
         if (output === "__COMPLETE__") {
-          console.log("Received completion signal, resolving promise");
+          Logger.log("Received completion signal, resolving promise");
           resolve();
         }
       };
 
       // Register callback for this execution
-      console.log(`Registering callback for msg_id: ${msg.header.msg_id}`);
+      Logger.log(`Registering callback for msg_id: ${msg.header.msg_id}`);
       this.outputCallbacks.set(msg.header.msg_id, wrappedCallback);
 
       // Send execute request
-      console.log("Sending execute request to kernel");
+      Logger.log("Sending execute request to kernel");
       this.sendMessage(this.shellSocket!, msg).catch(reject);
 
-      // Timeout after 30 seconds
+      // Timeout after CODE_EXECUTION_TIMEOUT
       setTimeout(() => {
         if (this.outputCallbacks.has(msg.header.msg_id)) {
-          console.log("Execution timeout - no completion received");
+          Logger.log("Execution timeout - no completion received");
           this.outputCallbacks.delete(msg.header.msg_id);
           reject(new Error("Execution timeout"));
         }
-      }, 30000);
+      }, getCodeExecutionTimeout());
     });
   }
 
@@ -300,7 +341,7 @@ export class KernelClient {
 
     const msg = this.createMessage("interrupt_request", {});
 
-    console.log("Sending interrupt request to kernel");
+    Logger.log("Sending interrupt request to kernel");
     await this.sendMessage(this.controlSocket, msg);
   }
 
@@ -336,6 +377,6 @@ export class KernelClient {
       this.controlSocket = null;
     }
 
-    console.log("Disconnected from kernel");
+    Logger.log("Disconnected from kernel");
   }
 }
