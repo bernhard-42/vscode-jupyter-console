@@ -106,7 +106,7 @@ The extension automatically tracks your selected Python interpreter:
 
 ![Python interpreter selection in VS Code](images/python-interpreter.png)
 
-On the left you see the status bar item of the python extension and on the right the staus bar item of the Jupyter Console extension. When you change the Python interpreter, the extension automatically stops the kernel and updates to use the new environment.
+On the left you see the status bar item of the Python extension and on the right the status bar item of the Jupyter Console extension. When you change the Python interpreter, the extension automatically stops the kernel and updates to use the new environment.
 
 **Automatic Behavior:**
 
