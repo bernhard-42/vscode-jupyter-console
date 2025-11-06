@@ -2,6 +2,13 @@ import * as vscode from "vscode";
 import { ConsoleManager } from "./consoleManager";
 import { CellDetector } from "./cellDetector";
 import { KernelClient } from "./kernelClient";
+import { KERNEL_OPERATION_WAIT } from "./constants";
+
+enum ExecutionType {
+  Line,
+  Selection,
+  Cell,
+}
 
 export class CodeExecutor {
   private consoleManager: ConsoleManager;
@@ -9,13 +16,6 @@ export class CodeExecutor {
 
   constructor(consoleManager: ConsoleManager) {
     this.consoleManager = consoleManager;
-  }
-
-  /**
-   * Get the console manager
-   */
-  getConsoleManager(): ConsoleManager {
-    return this.consoleManager;
   }
 
   /**
@@ -41,8 +41,8 @@ export class CodeExecutor {
         // Start the kernel
         await vscode.commands.executeCommand("jupyterConsole.startKernel");
 
-        // Wait a bit for kernel to be ready and client to be set
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Wait for kernel to be ready and client to be set
+        await new Promise(resolve => setTimeout(resolve, KERNEL_OPERATION_WAIT));
 
         // Check if kernel client is now available
         if (!this.kernelClient || !this.kernelClient.isKernelConnected()) {
@@ -70,110 +70,89 @@ export class CodeExecutor {
   }
 
   /**
-   * Run the current line and keep cursor at position
+   * Common helper to execute code and optionally advance cursor
    */
-  runLine(): void {
+  private executeAndAdvance(type: ExecutionType, advance: boolean): void {
     const editor = vscode.window.activeTextEditor;
-    if (!editor) {
-      return;
+    if (!editor) return;
+
+    let code: string | null | undefined = null;
+    let advancer: (editor: vscode.TextEditor) => void;
+
+    switch (type) {
+      case ExecutionType.Line:
+        code = CellDetector.getCurrentLine(editor);
+        advancer = CellDetector.moveCursorToNextLine;
+        break;
+
+      case ExecutionType.Selection:
+        code = CellDetector.getSelectedText(editor);
+        if (!code?.trim()) {
+          // Fallback to line if no selection
+          this.executeAndAdvance(ExecutionType.Line, advance);
+          return;
+        }
+        advancer = CellDetector.moveCursorToEndOfSelection;
+        break;
+
+      case ExecutionType.Cell:
+        const cell = CellDetector.getCurrentCell(editor);
+        code = cell?.code;
+        if (!cell?.code.trim()) {
+          vscode.window.showWarningMessage("No cell found at cursor position");
+          return;
+        }
+        advancer = CellDetector.moveCursorToNextCell;
+        break;
     }
 
-    const line = CellDetector.getCurrentLine(editor);
-    if (line.trim()) {
-      this.executeCode(line);
+    if (code?.trim()) {
+      this.executeCode(code);
+      if (advance) {
+        advancer(editor);
+      }
     }
+  }
+
+  /**
+   * Run the current line
+   */
+  runLine(): void {
+    this.executeAndAdvance(ExecutionType.Line, false);
   }
 
   /**
    * Run the current line and advance to next line
    */
   runLineAndAdvance(): void {
-    const editor = vscode.window.activeTextEditor;
-    if (!editor) {
-      return;
-    }
-
-    const line = CellDetector.getCurrentLine(editor);
-    if (line.trim()) {
-      this.executeCode(line);
-    }
-
-    CellDetector.moveCursorToNextLine(editor);
+    this.executeAndAdvance(ExecutionType.Line, true);
   }
 
   /**
-   * Run the selected text and keep cursor at position
+   * Run the selected text
    */
   runSelection(): void {
-    const editor = vscode.window.activeTextEditor;
-    if (!editor) {
-      return;
-    }
-
-    const selectedText = CellDetector.getSelectedText(editor);
-
-    if (selectedText && selectedText.trim()) {
-      this.executeCode(selectedText);
-    } else {
-      // If no selection, run current line
-      this.runLine();
-    }
+    this.executeAndAdvance(ExecutionType.Selection, false);
   }
 
   /**
    * Run the selected text and advance cursor
    */
   runSelectionAndAdvance(): void {
-    const editor = vscode.window.activeTextEditor;
-    if (!editor) {
-      return;
-    }
-
-    const selectedText = CellDetector.getSelectedText(editor);
-
-    if (selectedText && selectedText.trim()) {
-      this.executeCode(selectedText);
-      CellDetector.moveCursorToEndOfSelection(editor);
-    } else {
-      // If no selection, run current line and advance
-      this.runLineAndAdvance();
-    }
+    this.executeAndAdvance(ExecutionType.Selection, true);
   }
 
   /**
    * Run the current cell (code between # %% markers)
    */
   runCell(): void {
-    const editor = vscode.window.activeTextEditor;
-    if (!editor) {
-      return;
-    }
-
-    const cell = CellDetector.getCurrentCell(editor);
-
-    if (cell && cell.code.trim()) {
-      this.executeCode(cell.code);
-    } else {
-      vscode.window.showWarningMessage("No cell found at cursor position");
-    }
+    this.executeAndAdvance(ExecutionType.Cell, false);
   }
 
   /**
    * Run the current cell and advance to the next cell
    */
   runCellAndAdvance(): void {
-    const editor = vscode.window.activeTextEditor;
-    if (!editor) {
-      return;
-    }
-
-    const cell = CellDetector.getCurrentCell(editor);
-
-    if (cell && cell.code.trim()) {
-      this.executeCode(cell.code);
-      CellDetector.moveCursorToNextCell(editor);
-    } else {
-      vscode.window.showWarningMessage("No cell found at cursor position");
-    }
+    this.executeAndAdvance(ExecutionType.Cell, true);
   }
 }
