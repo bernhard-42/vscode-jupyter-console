@@ -1,3 +1,11 @@
+/**
+ * Copyright (c) 2025 Bernhard Walter
+ * SPDX-License-Identifier: MIT
+ *
+ * Developed with assistance from Claude Code by Anthropic.
+ * https://claude.ai/claude-code
+ */
+
 import * as vscode from "vscode";
 
 /**

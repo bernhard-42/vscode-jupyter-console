@@ -1,7 +1,18 @@
+/**
+ * Copyright (c) 2025 Bernhard Walter
+ * SPDX-License-Identifier: MIT
+ *
+ * Developed with assistance from Claude Code by Anthropic.
+ * https://claude.ai/claude-code
+ */
+
 import * as vscode from "vscode";
 import * as path from "path";
 import { KernelManager } from "./kernelManager";
-import { getViewerTerminalStartDelay, getConsoleTerminalStartDelay } from "./constants";
+import {
+  getViewerTerminalStartDelay,
+  getConsoleTerminalStartDelay,
+} from "./constants";
 
 export class ConsoleManager {
   private viewerTerminal: vscode.Terminal | null = null;
@@ -22,68 +33,76 @@ export class ConsoleManager {
    * Setup handler to restart terminals when config changes
    */
   private setupConfigChangeHandler(): void {
-    this.configChangeListener = vscode.workspace.onDidChangeConfiguration((e) => {
-      // Check if our config changed
-      if (e.affectsConfiguration("jupyterConsole.truncateInputLinesMax")) {
-        // If terminals are active and kernel is running, restart them
-        if (this.isActive() && this.kernelManager.isRunning()) {
-          // Show temporary status message
-          vscode.window.setStatusBarMessage(
-            "$(notebook-kernel-select) Jupyter Console config changed. Restarting terminals...",
-            3000
-          );
-          // Restart terminals with new config
-          this.startConsole().catch((error) => {
-            vscode.window.showErrorMessage(`Failed to restart terminals: ${error}`);
-          });
+    this.configChangeListener = vscode.workspace.onDidChangeConfiguration(
+      (e) => {
+        // Check if our config changed
+        if (e.affectsConfiguration("jupyterConsole.truncateInputLinesMax")) {
+          // If terminals are active and kernel is running, restart them
+          if (this.isActive() && this.kernelManager.isRunning()) {
+            // Show temporary status message
+            vscode.window.setStatusBarMessage(
+              "$(notebook-kernel-select) Jupyter Console config changed. Restarting terminals...",
+              3000
+            );
+            // Restart terminals with new config
+            this.startConsole().catch((error) => {
+              vscode.window.showErrorMessage(
+                `Failed to restart terminals: ${error}`
+              );
+            });
+          }
         }
       }
-    });
+    );
   }
 
   /**
    * Setup handler to close paired terminal when one is closed
    */
   private setupTerminalCloseHandler(): void {
-    this.terminalCloseListener = vscode.window.onDidCloseTerminal(async (closedTerminal) => {
-      // Check if one of our terminals was closed
-      const isViewerClosed = this.viewerTerminal && closedTerminal === this.viewerTerminal;
-      const isConsoleClosed = this.consoleTerminal && closedTerminal === this.consoleTerminal;
+    this.terminalCloseListener = vscode.window.onDidCloseTerminal(
+      async (closedTerminal) => {
+        // Check if one of our terminals was closed
+        const isViewerClosed =
+          this.viewerTerminal && closedTerminal === this.viewerTerminal;
+        const isConsoleClosed =
+          this.consoleTerminal && closedTerminal === this.consoleTerminal;
 
-      if (isViewerClosed || isConsoleClosed) {
-        // Clear reference to closed terminal
-        if (isViewerClosed) {
-          this.viewerTerminal = null;
-        } else if (isConsoleClosed) {
-          this.consoleTerminal = null;
-        }
-
-        // Automatically close the other terminal
-        if (this.viewerTerminal) {
-          this.viewerTerminal.dispose();
-          this.viewerTerminal = null;
-        }
-        if (this.consoleTerminal) {
-          this.consoleTerminal.dispose();
-          this.consoleTerminal = null;
-        }
-
-        // Ask if user wants to stop the kernel
-        const answer = await vscode.window.showInformationMessage(
-          "Both terminals closed. Stop the kernel?",
-          "Yes",
-          "No"
-        );
-
-        if (answer === "Yes") {
-          // Stop the kernel
-          if (this.kernelManager.isRunning()) {
-            await vscode.commands.executeCommand("jupyterConsole.stopKernel");
+        if (isViewerClosed || isConsoleClosed) {
+          // Clear reference to closed terminal
+          if (isViewerClosed) {
+            this.viewerTerminal = null;
+          } else if (isConsoleClosed) {
+            this.consoleTerminal = null;
           }
+
+          // Automatically close the other terminal
+          if (this.viewerTerminal) {
+            this.viewerTerminal.dispose();
+            this.viewerTerminal = null;
+          }
+          if (this.consoleTerminal) {
+            this.consoleTerminal.dispose();
+            this.consoleTerminal = null;
+          }
+
+          // Ask if user wants to stop the kernel
+          const answer = await vscode.window.showInformationMessage(
+            "Both terminals closed. Stop the kernel?",
+            "Yes",
+            "No"
+          );
+
+          if (answer === "Yes") {
+            // Stop the kernel
+            if (this.kernelManager.isRunning()) {
+              await vscode.commands.executeCommand("jupyterConsole.stopKernel");
+            }
+          }
+          // If "No", kernel keeps running and can be reconnected later
         }
-        // If "No", kernel keeps running and can be reconnected later
       }
-    });
+    );
   }
 
   /**

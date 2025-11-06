@@ -1,3 +1,11 @@
+/**
+ * Copyright (c) 2025 Bernhard Walter
+ * SPDX-License-Identifier: MIT
+ *
+ * Developed with assistance from Claude Code by Anthropic.
+ * https://claude.ai/claude-code
+ */
+
 import * as vscode from "vscode";
 import { ConsoleManager } from "./consoleManager";
 import { CellDetector } from "./cellDetector";
@@ -42,7 +50,9 @@ export class CodeExecutor {
         await vscode.commands.executeCommand("jupyterConsole.startKernel");
 
         // Wait for kernel to be ready and client to be set
-        await new Promise(resolve => setTimeout(resolve, getKernelOperationWait()));
+        await new Promise((resolve) =>
+          setTimeout(resolve, getKernelOperationWait())
+        );
 
         // Check if kernel client is now available
         if (!this.kernelClient || !this.kernelClient.isKernelConnected()) {

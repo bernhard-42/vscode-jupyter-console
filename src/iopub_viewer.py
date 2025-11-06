@@ -2,6 +2,12 @@
 """
 Jupyter iopub Viewer - Displays all kernel outputs with colors
 Connects to a Jupyter kernel's iopub channel and displays all outputs.
+
+Copyright (c) 2025 Bernhard Walter
+SPDX-License-Identifier: MIT
+
+Developed with assistance from Claude Code by Anthropic.
+https://claude.ai/claude-code
 """
 
 import sys

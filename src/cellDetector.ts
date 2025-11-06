@@ -1,3 +1,11 @@
+/**
+ * Copyright (c) 2025 Bernhard Walter
+ * SPDX-License-Identifier: MIT
+ *
+ * Developed with assistance from Claude Code by Anthropic.
+ * https://claude.ai/claude-code
+ */
+
 import * as vscode from "vscode";
 
 export interface Cell {
@@ -10,7 +18,10 @@ export class CellDetector {
   /**
    * Helper to move cursor to a specific line and reveal it
    */
-  private static moveCursorToLine(editor: vscode.TextEditor, lineNumber: number): void {
+  private static moveCursorToLine(
+    editor: vscode.TextEditor,
+    lineNumber: number
+  ): void {
     const newPosition = new vscode.Position(lineNumber, 0);
     editor.selection = new vscode.Selection(newPosition, newPosition);
     editor.revealRange(new vscode.Range(newPosition, newPosition));

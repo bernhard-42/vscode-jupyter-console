@@ -1,11 +1,20 @@
 {
   "name": "vscode-jupyter-console",
   "displayName": "Jupyter Console",
-  "description": "Run Python code with Jupyter kernel and console integration",
-  "version": "0.0.1",
+  "description": "Run Python code with Jupyter kernel and jupyter-console integration",
+  "version": "1.0.0",
+  "publisher": "bernhard-42",
+  "license": "MIT",
+  "repository": "https://github.com/bernhard-42/vscode-jupyter-console",
   "engines": {
     "vscode": "^1.85.0"
   },
+  "keywords": [
+    "jupyter",
+    "console",
+    "python",
+    "interactive"
+  ],
   "categories": [
     "Other"
   ],
@@ -152,39 +161,26 @@
     },
     "keybindings": [
       {
-        "command": "jupyterConsole.runLine",
+        "command": "jupyterConsole.runCellAndAdvance",
+        "key": "shift+enter",
+        "when": "editorTextFocus && editorLangId == python"
+      },
+      {
+        "command": "jupyterConsole.runCell",
         "key": "ctrl+enter",
         "mac": "cmd+enter",
         "when": "editorTextFocus && editorLangId == python"
       },
       {
-        "command": "jupyterConsole.runLineAndAdvance",
-        "key": "shift+enter",
-        "when": "editorTextFocus && editorLangId == python"
+        "command": "jupyterConsole.runSelectionAndAdvance",
+        "key": "shift+alt+enter",
+        "when": "editorTextFocus && editorHasSelection && editorLangId == python"
       },
       {
         "command": "jupyterConsole.runSelection",
         "key": "ctrl+alt+enter",
         "mac": "cmd+alt+enter",
         "when": "editorTextFocus && editorHasSelection && editorLangId == python"
-      },
-      {
-        "command": "jupyterConsole.runSelectionAndAdvance",
-        "key": "ctrl+shift+enter",
-        "mac": "cmd+shift+enter",
-        "when": "editorTextFocus && editorHasSelection && editorLangId == python"
-      },
-      {
-        "command": "jupyterConsole.runCell",
-        "key": "ctrl+alt+c",
-        "mac": "cmd+alt+c",
-        "when": "editorTextFocus && editorLangId == python"
-      },
-      {
-        "command": "jupyterConsole.runCellAndAdvance",
-        "key": "ctrl+alt+shift+c",
-        "mac": "cmd+alt+shift+c",
-        "when": "editorTextFocus && editorLangId == python"
       },
       {
         "command": "jupyterConsole.interruptKernel",
@@ -195,12 +191,14 @@
     ]
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile",
-    "compile": "tsc -p ./ && npm run copy-python",
+    "vscode:prepublish": "yarn compile",
+    "compile": "tsc -p ./ && yarn copy-python",
     "copy-python": "cp src/iopub_viewer.py out/iopub_viewer.py",
     "watch": "tsc -watch -p ./",
-    "pretest": "npm run compile && npm run lint",
-    "lint": "eslint src --ext ts"
+    "pretest": "yarn compile && yarn lint",
+    "lint": "eslint src --ext ts",
+    "package": "vsce package --yarn",
+    "release": "VERSION=$(node -p \"require('./package.json').version\") && git add . && git commit -m \"building release $VERSION\" && git tag \"v$VERSION\""
   },
   "devDependencies": {
     "@types/node": "18.x",
@@ -208,6 +206,7 @@
     "@types/vscode": "^1.85.0",
     "@typescript-eslint/eslint-plugin": "^6.13.0",
     "@typescript-eslint/parser": "^6.13.0",
+    "@vscode/vsce": "^3.2.1",
     "eslint": "^8.54.0",
     "typescript": "^5.3.2"
   },

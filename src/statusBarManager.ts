@@ -1,3 +1,11 @@
+/**
+ * Copyright (c) 2025 Bernhard Walter
+ * SPDX-License-Identifier: MIT
+ *
+ * Developed with assistance from Claude Code by Anthropic.
+ * https://claude.ai/claude-code
+ */
+
 import * as vscode from "vscode";
 import { KernelManager } from "./kernelManager";
 import { Logger } from "./logger";
@@ -120,7 +128,11 @@ export class StatusBarManager {
         this.pythonEnvName = parts[i - 1];
 
         // If it's a local venv (.venv, venv, env), show project name instead
-        if (this.pythonEnvName === ".venv" || this.pythonEnvName === "venv" || this.pythonEnvName === "env") {
+        if (
+          this.pythonEnvName === ".venv" ||
+          this.pythonEnvName === "venv" ||
+          this.pythonEnvName === "env"
+        ) {
           // Get workspace folder name (project name)
           const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
           if (workspaceFolder) {
@@ -137,7 +149,10 @@ export class StatusBarManager {
       if (pythonPath.includes("venv")) {
         // Check if it's a local venv in the workspace
         const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
-        if (workspaceFolder && pythonPath.startsWith(workspaceFolder.uri.fsPath)) {
+        if (
+          workspaceFolder &&
+          pythonPath.startsWith(workspaceFolder.uri.fsPath)
+        ) {
           // It's a local venv, use project name
           this.pythonEnvName = workspaceFolder.name;
         } else {

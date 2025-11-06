@@ -1,8 +1,18 @@
+/**
+ * Copyright (c) 2025 Bernhard Walter
+ * SPDX-License-Identifier: MIT
+ *
+ * Developed with assistance from Claude Code by Anthropic.
+ * https://claude.ai/claude-code
+ */
+
 import * as vscode from "vscode";
 import * as cp from "child_process";
-import * as path from "path";
 import { Logger } from "./logger";
-import { getKernelConnectionTimeout, getKernelOperationWait } from "./constants";
+import {
+  getKernelConnectionTimeout,
+  getKernelOperationWait,
+} from "./constants";
 
 export class KernelManager {
   private kernelProcess: cp.ChildProcess | null = null;
@@ -233,7 +243,9 @@ export class KernelManager {
    */
   async restartKernel(): Promise<void> {
     this.stopKernel();
-    await new Promise((resolve) => setTimeout(resolve, getKernelOperationWait())); // Wait for kernel to fully stop
+    await new Promise((resolve) =>
+      setTimeout(resolve, getKernelOperationWait())
+    ); // Wait for kernel to fully stop
     await this.startKernel();
   }
 
