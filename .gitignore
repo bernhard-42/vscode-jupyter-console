@@ -1,0 +1,11 @@
+out
+dist
+node_modules
+.vscode-test/
+*.vsix
+work
+ACTIVATION_FIX.md
+ARCHITECTURE.md
+STATUS_BAR_GUIDE.md
+TROUBLESHOOTING.md
+.claude

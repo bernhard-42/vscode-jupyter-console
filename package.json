@@ -1,0 +1,172 @@
+{
+  "name": "vscode-jupyter-console",
+  "displayName": "Jupyter Console",
+  "description": "Run Python code with Jupyter kernel and console integration",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "Jupyter Console",
+      "properties": {
+        "jupyterConsole.truncateInputLinesMax": {
+          "type": "number",
+          "default": 10,
+          "description": "Maximum number of input code lines to display before truncating in the Jupyter Output terminal. Set to 0 to show all lines.",
+          "minimum": 0
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "jupyterConsole.startKernel",
+        "title": "Start Kernel",
+        "icon": "$(play)"
+      },
+      {
+        "command": "jupyterConsole.stopKernel",
+        "title": "Stop Kernel",
+        "icon": "$(debug-stop)"
+      },
+      {
+        "command": "jupyterConsole.restartKernel",
+        "title": "Restart Kernel",
+        "icon": "$(debug-restart)"
+      },
+      {
+        "command": "jupyterConsole.interruptKernel",
+        "title": "Interrupt Kernel",
+        "icon": "$(debug-pause)"
+      },
+      {
+        "command": "jupyterConsole.startConsole",
+        "title": "Start Console Terminals",
+        "icon": "$(terminal)"
+      },
+      {
+        "command": "jupyterConsole.runLine",
+        "title": "Jupyter Console: Run Current Line"
+      },
+      {
+        "command": "jupyterConsole.runLineAndAdvance",
+        "title": "Jupyter Console: Run Current Line and Advance"
+      },
+      {
+        "command": "jupyterConsole.runSelection",
+        "title": "Jupyter Console: Run Selection"
+      },
+      {
+        "command": "jupyterConsole.runSelectionAndAdvance",
+        "title": "Jupyter Console: Run Selection and Advance"
+      },
+      {
+        "command": "jupyterConsole.runCell",
+        "title": "Jupyter Console: Run Cell"
+      }
+    ],
+    "submenus": [
+      {
+        "id": "jupyterConsole.kernelMenu",
+        "label": "Jupyter Kernel",
+        "icon": "$(notebook-kernel-select)"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "submenu": "jupyterConsole.kernelMenu",
+          "when": "editorLangId == python",
+          "group": "navigation"
+        }
+      ],
+      "jupyterConsole.kernelMenu": [
+        {
+          "command": "jupyterConsole.startKernel",
+          "group": "1_kernel@1"
+        },
+        {
+          "command": "jupyterConsole.stopKernel",
+          "group": "1_kernel@2"
+        },
+        {
+          "command": "jupyterConsole.restartKernel",
+          "group": "1_kernel@3"
+        },
+        {
+          "command": "jupyterConsole.interruptKernel",
+          "group": "1_kernel@4"
+        },
+        {
+          "command": "jupyterConsole.startConsole",
+          "group": "2_console@1"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "jupyterConsole.runLine",
+        "key": "ctrl+enter",
+        "mac": "cmd+enter",
+        "when": "editorTextFocus && editorLangId == python"
+      },
+      {
+        "command": "jupyterConsole.runLineAndAdvance",
+        "key": "shift+enter",
+        "when": "editorTextFocus && editorLangId == python"
+      },
+      {
+        "command": "jupyterConsole.runSelection",
+        "key": "ctrl+alt+enter",
+        "mac": "cmd+alt+enter",
+        "when": "editorTextFocus && editorHasSelection && editorLangId == python"
+      },
+      {
+        "command": "jupyterConsole.runSelectionAndAdvance",
+        "key": "ctrl+shift+enter",
+        "mac": "cmd+shift+enter",
+        "when": "editorTextFocus && editorHasSelection && editorLangId == python"
+      },
+      {
+        "command": "jupyterConsole.runCell",
+        "key": "ctrl+alt+c",
+        "mac": "cmd+alt+c",
+        "when": "editorTextFocus && editorLangId == python"
+      },
+      {
+        "command": "jupyterConsole.interruptKernel",
+        "key": "ctrl+alt+i",
+        "mac": "cmd+alt+i",
+        "when": "editorTextFocus && editorLangId == python"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./ && npm run copy-python",
+    "copy-python": "cp src/iopub_viewer.py out/iopub_viewer.py",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts"
+  },
+  "devDependencies": {
+    "@types/node": "18.x",
+    "@types/uuid": "^11.0.0",
+    "@types/vscode": "^1.85.0",
+    "@typescript-eslint/eslint-plugin": "^6.13.0",
+    "@typescript-eslint/parser": "^6.13.0",
+    "eslint": "^8.54.0",
+    "typescript": "^5.3.2"
+  },
+  "dependencies": {
+    "uuid": "^13.0.0",
+    "zeromq": "^6.5.0"
+  }
+}
