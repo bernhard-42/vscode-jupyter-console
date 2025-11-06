@@ -125,28 +125,14 @@ export class CodeExecutor {
   }
 
   /**
-   * Run the current line
-   */
-  runLine(): void {
-    this.executeAndAdvance(ExecutionType.Line, false);
-  }
-
-  /**
-   * Run the current line and advance to next line
-   */
-  runLineAndAdvance(): void {
-    this.executeAndAdvance(ExecutionType.Line, true);
-  }
-
-  /**
-   * Run the selected text
+   * Run the selected text (or current line if no selection)
    */
   runSelection(): void {
     this.executeAndAdvance(ExecutionType.Selection, false);
   }
 
   /**
-   * Run the selected text and advance cursor
+   * Run the selected text (or current line if no selection) and advance cursor
    */
   runSelectionAndAdvance(): void {
     this.executeAndAdvance(ExecutionType.Selection, true);

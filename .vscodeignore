@@ -10,6 +10,10 @@ vsc-extension-quickstart.md
 **/*.map
 **/*.ts
 node_modules/**
+!node_modules/zeromq/**
+!node_modules/uuid/**
+!node_modules/cmake-ts/**
+!node_modules/node-addon-api/**
 .git/**
 yarn.lock
 package-lock.json

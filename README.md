@@ -138,14 +138,12 @@ All commands are accessible via:
 
 #### Code Execution Commands
 
-| Command `Jupyter Console: ...`     | Keyboard Shortcut     | Description                                   |
-| ---------------------------------- | --------------------- | --------------------------------------------- |
-| `... Run Cell and Advance`         | `Shift + Enter`       | Execute cell, move to next cell               |
-| `... Run Cell`                     | `Ctrl  + Enter`       | Execute current cell (between `# %%` markers) |
-| `... Run Selection and Advance`    | `Shift + Alt + Enter` | Execute selection, move cursor after          |
-| `... Run Selection`                | `Ctrl  + Alt + Enter` | Execute selected code                         |
-| `... Run Current Line and Advance` | n/a                   | Execute current line, move to next line       |
-| `... Run Current Line`             | n/a                   | Execute current line, keep cursor position    |
+| Command `Jupyter Console: ...`       | Keyboard Shortcut      | Description                                             |
+| ------------------------------------ | ---------------------- | ------------------------------------------------------- |
+| `... Run Cell and Advance`           | `        Ctrl + Enter` | Execute cell, move to next cell                         |
+| `... Run Cell`                       | `Shift + Ctrl + Enter` | Execute current cell (between `# %%` markers)           |
+| `... Run Selection/Line and Advance` | `        Alt  + Enter` | Execute selection/line, move cursor after               |
+| `... Run Selection/Line`             | `Shift + Alt  + Enter` | Execute selected code (or current line if no selection) |
 
 **Additional Shortcut:**
 
@@ -284,9 +282,6 @@ _Increase these values on slower machines if you experience timeout errors._
 ### Overview
 
 The extension uses the **Jupyter messaging protocol** directly via ZMQ for fast, reliable communication with the kernel.
-
-![Architecture diagram](images/architecture.png)
-_Extension components: Editor sends code to KernelClient via ZMQ, kernel processes code and sends output to iopub_viewer.py terminal, optional jupyter-console terminal connects to same kernel_
 
 ### Component Relationships
 
@@ -616,6 +611,37 @@ The extension implements the Jupyter messaging specification for kernel communic
 
 Contributions are welcome! Please feel free to submit issues or pull requests at:
 https://github.com/bernhard-42/vscode-jupyter-console
+
+### Building from Source
+
+**For local development:**
+
+```bash
+yarn install
+yarn compile
+```
+
+**For packaging:**
+
+Due to native dependencies (zeromq), platform-specific packages must be built:
+
+```bash
+# Build for your current platform
+yarn package:mac-arm      # macOS Apple Silicon
+yarn package:mac-intel    # macOS Intel
+yarn package:linux        # Linux
+yarn package:win32        # Windows
+```
+
+**For releases:**
+
+Use GitHub Actions to automatically build for all platforms:
+
+1. Push a tag: `git tag v1.0.0 && git push origin v1.0.0`
+2. GitHub Actions will build VSIX files for all platforms
+3. Download artifacts from the Actions run or GitHub release
+
+See `.github/workflows/build-release.yml` for details.
 
 ## License
 

@@ -151,21 +151,7 @@ export function registerCommands(
     })
   );
 
-  // Run line command
-  context.subscriptions.push(
-    vscode.commands.registerCommand("jupyterConsole.runLine", () => {
-      ctx.codeExecutor.runLine();
-    })
-  );
-
-  // Run line and advance command
-  context.subscriptions.push(
-    vscode.commands.registerCommand("jupyterConsole.runLineAndAdvance", () => {
-      ctx.codeExecutor.runLineAndAdvance();
-    })
-  );
-
-  // Run selection command
+  // Run selection command (or current line if no selection)
   context.subscriptions.push(
     vscode.commands.registerCommand("jupyterConsole.runSelection", () => {
       ctx.codeExecutor.runSelection();
