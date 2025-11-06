@@ -63,11 +63,30 @@ jobs:
         with:
           path: artifacts
 
+      - name: Flatten artifacts directory
+        run: |
+          mkdir -p release-files
+          find artifacts -name "*.vsix" -exec cp {} release-files/ \;
+          ls -lh release-files/
+
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          files: artifacts/**/*.vsix
+          files: release-files/*.vsix
           draft: false
           prerelease: false
+          generate_release_notes: true
+          body: |
+            ## VS Code Jupyter Console Extension
+
+            Download the appropriate VSIX file for your platform:
+            - **Windows**: `*-win32-x64.vsix`
+            - **Linux**: `*-linux-x64.vsix`
+            - **macOS Intel**: `*-darwin-x64.vsix`
+            - **macOS Apple Silicon**: `*-darwin-arm64.vsix`
+
+            ### Installation
+            Install via command line: `code --install-extension <filename>.vsix`
+            Or in VS Code: Extensions → ... → Install from VSIX
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
