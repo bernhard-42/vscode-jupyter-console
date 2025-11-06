@@ -13,6 +13,9 @@ import {
   getKernelConnectionTimeout,
   getKernelOperationWait,
 } from "./constants";
+import { promisify } from "util";
+
+const execAsync = promisify(cp.exec);
 
 export class KernelManager {
   private kernelProcess: cp.ChildProcess | null = null;
@@ -24,12 +27,107 @@ export class KernelManager {
   }
 
   /**
+   * Check if a Python package is installed
+   */
+  private async checkPackageInstalled(packageImport: string): Promise<boolean> {
+    try {
+      await execAsync(`"${this.pythonPath}" -c "import ${packageImport}"`);
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  /**
+   * Check for missing required dependencies
+   */
+  private async checkDependencies(): Promise<string[]> {
+    const missing: string[] = [];
+
+    // Check pyzmq (imports as 'zmq')
+    if (!(await this.checkPackageInstalled("zmq"))) {
+      missing.push("pyzmq");
+    }
+
+    // Check jupyter-console (imports as 'jupyter_console')
+    // Note: jupyter-console includes jupyter-client as a dependency
+    if (!(await this.checkPackageInstalled("jupyter_console"))) {
+      missing.push("jupyter-console");
+    }
+
+    return missing;
+  }
+
+  /**
+   * Prompt user to install missing packages
+   */
+  private async promptInstallPackages(packages: string[]): Promise<boolean> {
+    const packageList = packages.join(", ");
+    const message = `Required Python packages are missing: ${packageList}\n\nHow would you like to install them?`;
+
+    const choice = await vscode.window.showErrorMessage(
+      message,
+      "pip install",
+      "uv pip install",
+      "uv add",
+      "Cancel"
+    );
+
+    if (!choice || choice === "Cancel") {
+      return false;
+    }
+
+    try {
+      let command: string;
+      if (choice === "pip install") {
+        command = `"${this.pythonPath}" -m pip install ${packages.join(" ")}`;
+      } else if (choice === "uv pip install") {
+        command = `uv pip install --python "${this.pythonPath}" ${packages.join(" ")}`;
+      } else { // "uv add"
+        command = `uv add --python "${this.pythonPath}" ${packages.join(" ")}`;
+      }
+
+      Logger.log(`Installing packages: ${command}`);
+      vscode.window.showInformationMessage(`Installing ${packageList}...`);
+
+      const { stdout, stderr } = await execAsync(command);
+      Logger.log(`Installation output: ${stdout}`);
+      if (stderr) {
+        Logger.log(`Installation stderr: ${stderr}`);
+      }
+
+      vscode.window.showInformationMessage(`Successfully installed ${packageList}`);
+      return true;
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      Logger.error(`Installation failed: ${errorMsg}`);
+      vscode.window.showErrorMessage(`Failed to install packages: ${errorMsg}`);
+      return false;
+    }
+  }
+
+  /**
    * Start a new Jupyter kernel
    */
   async startKernel(): Promise<void> {
     if (this.kernelProcess) {
       vscode.window.showWarningMessage("Kernel is already running");
       return;
+    }
+
+    // Check for missing dependencies
+    const missingPackages = await this.checkDependencies();
+    if (missingPackages.length > 0) {
+      const installed = await this.promptInstallPackages(missingPackages);
+      if (!installed) {
+        throw new Error("Required dependencies not installed");
+      }
+
+      // Verify installation succeeded
+      const stillMissing = await this.checkDependencies();
+      if (stillMissing.length > 0) {
+        throw new Error(`Failed to install: ${stillMissing.join(", ")}`);
+      }
     }
 
     try {
@@ -179,11 +277,34 @@ export class KernelManager {
 
       this.kernelProcess.on("exit", (code) => {
         if (code !== 0 && code !== null) {
-          reject(
-            new Error(
-              `Kernel process exited with code ${code}.\nStderr: ${stderrBuffer}\nStdout: ${stdoutBuffer}`
-            )
-          );
+          // Check if error is due to missing dependencies
+          if (stderrBuffer.includes("ModuleNotFoundError")) {
+            if (stderrBuffer.includes("zmq")) {
+              reject(
+                new Error(
+                  `Python package 'pyzmq' is required but not installed.\n\nRestart the kernel to install it automatically.`
+                )
+              );
+            } else if (stderrBuffer.includes("jupyter_console")) {
+              reject(
+                new Error(
+                  `Python package 'jupyter-console' is required but not installed.\n\nRestart the kernel to install it automatically.`
+                )
+              );
+            } else {
+              reject(
+                new Error(
+                  `Kernel process exited with code ${code}.\nStderr: ${stderrBuffer}\nStdout: ${stdoutBuffer}`
+                )
+              );
+            }
+          } else {
+            reject(
+              new Error(
+                `Kernel process exited with code ${code}.\nStderr: ${stderrBuffer}\nStdout: ${stdoutBuffer}`
+              )
+            );
+          }
         }
       });
 
