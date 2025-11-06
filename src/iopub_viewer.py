@@ -164,11 +164,8 @@ def main():
                         print(line)
                 print()
 
-                # Show red X for errors (especially for interrupts that arrive after green checkmark)
-                print(red("✗"))
-                print()
-
                 # Mark that this execution had an error
+                # Status icon will be shown when status message arrives
                 execution_had_error = True
                 sys.stdout.flush()
 
