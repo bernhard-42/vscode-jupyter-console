@@ -17,7 +17,7 @@ A VS Code extension that integrates Jupyter kernels with console interface for i
 
 #### From VSIX File
 
-1. Download the `.vsix` file from the github "Release" section
+1. Download the `.vsix` file from the github "Release" section for your operating system.
 2. In VS Code, open the Command Palette (`Cmd+Shift+P` / `Ctrl+Shift+P`)
 3. Run `Extensions: Install from VSIX...`
 4. Select the downloaded `.vsix` file
@@ -52,11 +52,19 @@ The status bar shows your Python environment name (e.g., `venv`, `conda_env`, or
 
 ### Editor Actions Menu
 
-When editing Python files, a **Jupyter Kernel** menu appears in the editor toolbar:
+When editing Python files, a _Jupyter Kernel_ and a _Run in Console_ menu appears in the editor toolbar:
 
-![Editor toolbar with Jupyter Kernel menu](images/editor-menu.png)
+- _Jupyter Kernel_ menu
 
-The Jupyter Kernel menu provides quick access to: _Start Kernel_, _Stop Kernel_, _Restart Kernel_, _Interrupt Kernel_, and _Start Console Terminals_
+  The _Jupyter Kernel_ menu provides quick access to: `Start Kernel`, `Stop Kernel`, `Restart Kernel`, `Interrupt Kernel`, and `Start Console Terminals`
+
+  ![Editor toolbar with Jupyter Kernel menu](images/editor-kernel-menu.png)
+
+- "_Run in Console_ menu
+
+  The _Run in Console_ menu provides quick access to: `Run Cell and Advance`, `Run Cell`, `Run Selection and Advance`, and `Run Selection`
+
+  ![Editor toolbar with Jupyter Kernel menu](images/editor-run-menu.png)
 
 ### Output Terminals
 
@@ -100,13 +108,17 @@ The extension creates two dedicated terminals:
 
    **To start:** Click the status bar or use the editor menu and select "Start Console Terminals"
 
+Note: This setup uses the least screen footage. In cas the _Jupyter Console_ shoould be larger, you can increase the panel height (which will decrease the editor height), or use the VS Code features _Move Terminal into Editor Area_ or _Move Terminal into New Window_.
+
+![Relocate Termninals](images/relocate-terminal.png)
+
 ### Python Interpreter Integration
 
 The extension automatically tracks your selected Python interpreter:
 
 ![Python interpreter selection in VS Code](images/python-interpreter.png)
 
-On the left you see the status bar item of the Python extension and on the right the status bar item of the Jupyter Console extension. When you change the Python interpreter, the extension automatically stops the kernel and updates to use the new environment.
+On the left you see the status bar item of the Python extension and on the right the status bar item of the Jupyter Console extension. When you change the Python interpreter, the extension automatically stops the kernel and updates itself to use the new environment.
 
 **Automatic Behavior:**
 
@@ -128,22 +140,24 @@ All commands are accessible via:
 
 #### Kernel Management Commands
 
-| Command                             | Description                                                  |
-| ----------------------------------- | ------------------------------------------------------------ |
-| `Jupyter Console: Start Kernel`     | Start a new Jupyter kernel using selected Python interpreter |
-| `Jupyter Console: Stop Kernel`      | Stop the running kernel and close terminals                  |
-| `Jupyter Console: Restart Kernel`   | Restart kernel (clears all variables)                        |
-| `Jupyter Console: Interrupt Kernel` | Send interrupt signal (Ctrl+C) to kernel                     |
-| `Jupyter Console: Start Console`    | Start the output viewer and console terminals                |
+| Command                                    | Description                                                  |
+| ------------------------------------------ | ------------------------------------------------------------ |
+| `Jupyter Console: Start Kernel`            | Start a new Jupyter kernel using selected Python interpreter |
+| `Jupyter Console: Stop Kernel`             | Stop the running kernel and close terminals                  |
+| `Jupyter Console: Restart Kernel`          | Restart kernel (clears all variables)                        |
+| `Jupyter Console: Interrupt Kernel`        | Send interrupt signal (Ctrl+C) to kernel                     |
+| `Jupyter Console: Start Console Terminals` | Start the output viewer and console terminals                |
 
 #### Code Execution Commands
 
-| Command `Jupyter Console: ...`       | Keyboard Shortcut      | Description                                             |
-| ------------------------------------ | ---------------------- | ------------------------------------------------------- |
-| `... Run Cell and Advance`           | `Ctrl + Enter`         | Execute cell, move to next cell                         |
-| `... Run Cell`                       | `Ctrl + Shift + Enter` | Execute current cell (between `# %%` markers)           |
-| `... Run Selection/Line and Advance` | `Alt  + Enter`         | Execute selection/line, move cursor after               |
-| `... Run Selection/Line`             | `Alt  + Shift + Enter` | Execute selected code (or current line if no selection) |
+These are the same as in the _Run in Console_ action menu, with their default keyboard shortcuts.
+
+| Command                                           | Keyboard Shortcut      | Description                                             |
+| ------------------------------------------------- | ---------------------- | ------------------------------------------------------- |
+| `Jupyter Console: Run Cell and Advance`           | `Ctrl + Enter`         | Execute cell, move to next cell                         |
+| `Jupyter Console: Run Cell`                       | `Ctrl + Shift + Enter` | Execute current cell (between `# %%` markers)           |
+| `Jupyter Console: Run Selection/Line and Advance` | `Alt  + Enter`         | Execute selection/line, move cursor after               |
+| `Jupyter Console: Run Selection/Line`             | `Alt  + Shift + Enter` | Execute selected code (or current line if no selection) |
 
 **Additional Shortcut:**
 
@@ -158,7 +172,7 @@ Write code, press Shift+Enter to execute each line and advance, view output in J
 1. Open a Python file
 2. Click status bar → "Start Kernel"
 3. Write your code
-4. Press `Shift+Enter` to execute each line and advance
+4. Press `Alt+Enter` to execute each line and advance (if no code is selected, _Run Selection_ uses the current line)
 5. View output in **Jupyter Output** terminal
 
 #### Workflow 2: Cell-Based Development
@@ -189,7 +203,7 @@ Organize code into cells with `# %%` markers, execute cells independently with `
 Execute code from editor, then use Jupyter Console for interactive inspection of variables and testing
 
 1. Execute code from your editor
-2. Click status bar → "Start Console Terminals" (if not already open)
+2. Open the terminals panel (if not already open)
 3. Switch to **Jupyter Console** terminal
 4. Inspect variables interactively:
    ```python
