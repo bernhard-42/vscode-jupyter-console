@@ -81,12 +81,15 @@ export async function registerPythonInterpreterListener(
       Logger.log("Python interpreter changed!");
       Logger.log(`New interpreter path: ${e.path}`);
 
+      // Check if kernel was running before cleanup
+      const wasRunning = kernelManager.isRunning();
+
       // Clean up without confirmation
       await cleanupKernelClient();
       Logger.log("✓ Terminals closed and kernel client disconnected");
 
       // Stop kernel process
-      if (kernelManager.isRunning()) {
+      if (wasRunning) {
         kernelManager.stopKernel();
         Logger.log("✓ Kernel stopped");
       }
@@ -101,11 +104,13 @@ export async function registerPythonInterpreterListener(
       statusBarManager.setState(KernelState.Stopped);
       Logger.log("✓ Status bar updated");
 
-      // Show temporary status message that vanishes after 3 seconds
-      vscode.window.setStatusBarMessage(
-        "$(notebook-kernel-select) Python interpreter changed. Kernel stopped.",
-        3000
-      );
+      // Show temporary status message only if kernel was running
+      if (wasRunning) {
+        vscode.window.setStatusBarMessage(
+          "$(notebook-kernel-select) Python interpreter changed. Kernel stopped.",
+          3000
+        );
+      }
     })
   );
 
