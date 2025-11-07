@@ -73,36 +73,28 @@
     "commands": [
       {
         "command": "jupyterConsole.startKernel",
-        "title": "Start Kernel",
+        "title": "Jupyter Console: Start Kernel",
         "icon": "$(play)"
       },
       {
         "command": "jupyterConsole.stopKernel",
-        "title": "Stop Kernel",
+        "title": "Jupyter Console: Stop Kernel",
         "icon": "$(debug-stop)"
       },
       {
         "command": "jupyterConsole.restartKernel",
-        "title": "Restart Kernel",
+        "title": "Jupyter Console: Restart Kernel",
         "icon": "$(debug-restart)"
       },
       {
         "command": "jupyterConsole.interruptKernel",
-        "title": "Interrupt Kernel",
+        "title": "Jupyter Console: Interrupt Kernel",
         "icon": "$(debug-pause)"
       },
       {
         "command": "jupyterConsole.startConsole",
-        "title": "Start Console Terminals",
+        "title": "Jupyter Console: Start Console Terminals",
         "icon": "$(terminal)"
-      },
-      {
-        "command": "jupyterConsole.runSelection",
-        "title": "Jupyter Console: Run Selection/Line"
-      },
-      {
-        "command": "jupyterConsole.runSelectionAndAdvance",
-        "title": "Jupyter Console: Run Selection/Line and Advance"
       },
       {
         "command": "jupyterConsole.runCell",
@@ -111,6 +103,14 @@
       {
         "command": "jupyterConsole.runCellAndAdvance",
         "title": "Jupyter Console: Run Cell and Advance"
+      },
+      {
+        "command": "jupyterConsole.runSelection",
+        "title": "Jupyter Console: Run Selection/Line"
+      },
+      {
+        "command": "jupyterConsole.runSelectionAndAdvance",
+        "title": "Jupyter Console: Run Selection/Line and Advance"
       }
     ],
     "submenus": [
@@ -118,12 +118,22 @@
         "id": "jupyterConsole.kernelMenu",
         "label": "Jupyter Kernel",
         "icon": "$(notebook-kernel-select)"
+      },
+      {
+        "id": "jupyterConsole.runMenu",
+        "label": "Run in Console",
+        "icon": "$(run-all)"
       }
     ],
     "menus": {
       "editor/title": [
         {
           "submenu": "jupyterConsole.kernelMenu",
+          "when": "editorLangId == python",
+          "group": "navigation"
+        },
+        {
+          "submenu": "jupyterConsole.runMenu",
           "when": "editorLangId == python",
           "group": "navigation"
         }
@@ -148,6 +158,24 @@
         {
           "command": "jupyterConsole.startConsole",
           "group": "2_console@1"
+        }
+      ],
+      "jupyterConsole.runMenu": [
+        {
+          "command": "jupyterConsole.runCellAndAdvance",
+          "group": "1_cell@1"
+        },
+        {
+          "command": "jupyterConsole.runCell",
+          "group": "1_cell@2"
+        },
+        {
+          "command": "jupyterConsole.runSelectionAndAdvance",
+          "group": "2_run@1"
+        },
+        {
+          "command": "jupyterConsole.runSelection",
+          "group": "2_run@2"
         }
       ]
     },
