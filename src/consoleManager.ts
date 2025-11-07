@@ -36,7 +36,10 @@ export class ConsoleManager {
     this.configChangeListener = vscode.workspace.onDidChangeConfiguration(
       (e) => {
         // Check if our config changed
-        if (e.affectsConfiguration("jupyterConsole.truncateInputLinesMax")) {
+        if (
+          e.affectsConfiguration("jupyterConsole.truncateInputLinesMax") ||
+          e.affectsConfiguration("jupyterConsole.enableOutputViewer")
+        ) {
           // If terminals are active and kernel is running, restart them
           if (this.isActive() && this.kernelManager.isRunning()) {
             // Show temporary status message
@@ -86,9 +89,19 @@ export class ConsoleManager {
             this.consoleTerminal = null;
           }
 
+          // Determine message based on configuration
+          const config = vscode.workspace.getConfiguration("jupyterConsole");
+          const enableOutputViewer = config.get<boolean>(
+            "enableOutputViewer",
+            false
+          );
+          const message = enableOutputViewer
+            ? "Both terminals closed. Stop the kernel?"
+            : "Jupyter Console closed. Stop the kernel?";
+
           // Ask if user wants to stop the kernel
           const answer = await vscode.window.showInformationMessage(
-            "Both terminals closed. Stop the kernel?",
+            message,
             "Yes",
             "No"
           );
@@ -132,33 +145,39 @@ export class ConsoleManager {
 
       const pythonPath = this.kernelManager.getPythonPath();
 
-      // Get truncate lines configuration
+      // Get configuration
       const config = vscode.workspace.getConfiguration("jupyterConsole");
+      const enableOutputViewer = config.get<boolean>(
+        "enableOutputViewer",
+        true
+      );
       const truncateLines = config.get<number>("truncateInputLinesMax", 10);
 
-      // Create iopub viewer terminal (shown by default)
-      try {
-        this.viewerTerminal = vscode.window.createTerminal(
-          "Jupyter Output",
-          process.platform === "win32" ? process.env.COMSPEC : undefined
-        );
-      } catch (error) {
-        throw new Error(`Failed to create output viewer terminal: ${error}`);
-      }
-
-      // Start the iopub viewer
-      setTimeout(() => {
-        if (this.viewerTerminal) {
-          const viewerScript = path.join(
-            this.extensionPath,
-            "out",
-            "iopub_viewer.py"
+      // Create iopub viewer terminal (shown by default) if enabled
+      if (enableOutputViewer) {
+        try {
+          this.viewerTerminal = vscode.window.createTerminal(
+            "Jupyter Output",
+            process.platform === "win32" ? process.env.COMSPEC : undefined
           );
-          const command = `"${pythonPath}" "${viewerScript}" "${connectionFile}" ${truncateLines}`;
-          this.viewerTerminal.sendText(command, true);
-          this.viewerTerminal.show();
+        } catch (error) {
+          throw new Error(`Failed to create output viewer terminal: ${error}`);
         }
-      }, getViewerTerminalStartDelay());
+
+        // Start the iopub viewer
+        setTimeout(() => {
+          if (this.viewerTerminal) {
+            const viewerScript = path.join(
+              this.extensionPath,
+              "out",
+              "iopub_viewer.py"
+            );
+            const command = `"${pythonPath}" "${viewerScript}" "${connectionFile}" ${truncateLines}`;
+            this.viewerTerminal.sendText(command, true);
+            this.viewerTerminal.show();
+          }
+        }, getViewerTerminalStartDelay());
+      }
 
       // Create Jupyter console terminal (separate, not shown by default)
       try {
@@ -173,7 +192,11 @@ export class ConsoleManager {
       // Start jupyter console
       setTimeout(() => {
         if (this.consoleTerminal) {
-          const command = `"${pythonPath}" -m jupyter console --existing "${connectionFile}"`;
+          // Only include other output if Jupyter Output viewer is disabled
+          const includeOtherOutput = !enableOutputViewer
+            ? " --ZMQTerminalInteractiveShell.include_other_output=True --ZMQTerminalInteractiveShell.other_output_prefix='Out:'"
+            : "";
+          const command = `"${pythonPath}" -m jupyter console${includeOtherOutput} --existing "${connectionFile}"`;
           this.consoleTerminal.sendText(command, true);
         }
       }, getConsoleTerminalStartDelay());
@@ -192,9 +215,18 @@ export class ConsoleManager {
   }
 
   /**
-   * Show the output viewer terminal
+   * Show the output viewer terminal (if enabled)
    */
   showViewer(): void {
+    const config = vscode.workspace.getConfiguration("jupyterConsole");
+    const enableOutputViewer = config.get<boolean>("enableOutputViewer", true);
+
+    if (!enableOutputViewer) {
+      // If viewer is disabled, show the console instead
+      this.showConsole();
+      return;
+    }
+
     if (this.viewerTerminal) {
       this.viewerTerminal.show(true);
     }
@@ -206,6 +238,15 @@ export class ConsoleManager {
   showConsole(): void {
     if (this.consoleTerminal) {
       this.consoleTerminal.show(true);
+    }
+  }
+
+  /**
+   * Send text to the Jupyter Console terminal
+   */
+  sendToConsole(text: string): void {
+    if (this.consoleTerminal) {
+      this.consoleTerminal.sendText(text, false);
     }
   }
 

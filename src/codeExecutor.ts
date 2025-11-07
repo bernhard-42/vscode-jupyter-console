@@ -80,6 +80,7 @@ export class CodeExecutor {
     } catch (error) {
       vscode.window.showErrorMessage(`Execution error: ${error}`);
     }
+    this.consoleManager.sendToConsole("\n");
   }
 
   /**

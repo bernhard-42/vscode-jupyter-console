@@ -228,6 +228,9 @@ The extension provides configurable timeouts for different operations. Access vi
 
 **User Settings:**
 
+- `jupyterConsole.enableOutputViewer` (default: true)
+  - Enable/disable the Jupyter Output viewer terminal
+  - When disabled, only the Jupyter Console terminal is used
 - `jupyterConsole.truncateInputLinesMax` (default: 10)
   - Maximum input code lines shown in Jupyter Output before truncating
   - Set to 0 to show all lines

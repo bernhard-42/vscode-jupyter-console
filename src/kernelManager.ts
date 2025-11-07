@@ -88,7 +88,8 @@ export class KernelManager {
       Logger.log(`Installing packages: ${command}`);
 
       // Get current workspace directory for uv add to find pyproject.toml
-      const cwd = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || process.cwd();
+      const cwd =
+        vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || process.cwd();
       Logger.log(`Using working directory: ${cwd}`);
 
       // Use progress notification that auto-dismisses when done
@@ -146,14 +147,26 @@ export class KernelManager {
     }
 
     try {
-      // Start kernel using jupyter kernel
-      const args = ["-m", "jupyter", "kernel", "--kernel=python3"];
+      // Start kernel using jupyter_client.KernelManager to use the current Python environment
+      // This avoids kernelspec lookup and ensures we use the right kernel
+      const pythonScript = `
+from jupyter_client import KernelManager
+import sys, time
+km = KernelManager()
+km.start_kernel()
+print(km.connection_file, flush=True)
+try:
+    while km.is_alive():
+        time.sleep(1)
+except KeyboardInterrupt:
+    km.shutdown_kernel()
+`;
 
       Logger.log(
-        `Starting kernel with command: ${this.pythonPath} ${args.join(" ")}`
+        `Starting kernel with command: ${this.pythonPath} -c "<kernel script>"`
       );
 
-      this.kernelProcess = cp.spawn(this.pythonPath, args, {
+      this.kernelProcess = cp.spawn(this.pythonPath, ["-c", pythonScript], {
         env: { ...process.env },
         shell: false,
       });
@@ -161,8 +174,13 @@ export class KernelManager {
       // Collect stderr for debugging
       let errorOutput = "";
       this.kernelProcess.stderr?.on("data", (data) => {
-        errorOutput += data.toString();
-        Logger.error("Kernel stderr:", data.toString());
+        const text = data.toString();
+        errorOutput += text;
+
+        // Filter out expected shutdown message
+        if (!text.includes("Parent appears to have exited, shutting down")) {
+          Logger.error("Kernel stderr:", text);
+        }
       });
 
       this.kernelProcess.stdout?.on("data", (data) => {
@@ -205,39 +223,13 @@ export class KernelManager {
         source: string
       ): boolean => {
         // Look for connection file path in output
-        // Matches both:
-        // - "Connection file: /path/to/kernel-xxx.json"
-        // - "To connect a client: --existing kernel-xxx.json"
+        // KernelManager prints the full path directly, e.g.:
+        // /Users/user/Library/Jupyter/runtime/kernel-xxx.json
 
-        // First try to match the Connection file format
-        let match = buffer.match(/Connection file:\s*(\S+\.json)/);
+        // Match any line containing a .json file path
+        const match = buffer.match(/(\S+\.json)/);
         if (match) {
-          this.connectionFile = match[1];
-          Logger.log(
-            `Found connection file in ${source}: ${this.connectionFile}`
-          );
-          return true;
-        }
-
-        // Try to match the --existing format
-        match = buffer.match(/--existing\s+(\S+\.json)/);
-        if (match) {
-          // If it's just the filename without path, we need to construct the full path
-          const filename = match[1];
-          if (filename.includes("/")) {
-            this.connectionFile = filename;
-          } else {
-            // Construct full path to runtime directory
-            const os = require("os");
-            const path = require("path");
-            this.connectionFile = path.join(
-              os.homedir(),
-              "Library",
-              "Jupyter",
-              "runtime",
-              filename
-            );
-          }
+          this.connectionFile = match[1].trim();
           Logger.log(
             `Found connection file in ${source}: ${this.connectionFile}`
           );

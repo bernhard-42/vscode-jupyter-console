@@ -26,6 +26,12 @@
     "configuration": {
       "title": "Jupyter Console",
       "properties": {
+        "jupyterConsole.enableOutputViewer": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable the Jupyter Output viewer terminal. Disable to use only the Jupyter Console terminal.",
+          "order": 0
+        },
         "jupyterConsole.truncateInputLinesMax": {
           "type": "number",
           "default": 10,
