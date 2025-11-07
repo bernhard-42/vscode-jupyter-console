@@ -60,7 +60,7 @@ export function registerCommands(
         // Get the current Python interpreter before starting
         const pythonPath = await ctx.getPythonPath();
         ctx.kernelManager.setPythonPath(pythonPath);
-        ctx.statusBarManager.setPythonEnv(pythonPath);
+        await ctx.statusBarManager.updatePythonEnv();
 
         ctx.statusBarManager.setState(KernelState.Starting);
 
@@ -99,7 +99,7 @@ export function registerCommands(
           // Get the current Python interpreter before restarting
           const pythonPath = await ctx.getPythonPath();
           ctx.kernelManager.setPythonPath(pythonPath);
-          ctx.statusBarManager.setPythonEnv(pythonPath);
+          await ctx.statusBarManager.updatePythonEnv();
 
           ctx.statusBarManager.setState(KernelState.Starting);
           await ctx.kernelManager.restartKernel();

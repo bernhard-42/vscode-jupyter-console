@@ -234,10 +234,10 @@ The extension provides configurable timeouts for different operations. Access vi
 
 **Advanced Settings:**
 
-- `jupyterConsole.advanced.viewerTerminalStartDelay` (default: 300ms)
+- `jupyterConsole.advanced.viewerTerminalStartDelay` (default: 1000ms)
   - Delay before starting output viewer terminal
-- `jupyterConsole.advanced.consoleTerminalStartDelay` (default: 500ms)
-  - Delay before starting console terminal
+- `jupyterConsole.advanced.consoleTerminalStartDelay` (default: 1000ms)
+  - Delay before starting console terminal (allows conda/virtualenv activation to complete)
 - `jupyterConsole.advanced.kernelOperationWait` (default: 1000ms)
   - Wait time for kernel operations (restart, initial connection)
 - `jupyterConsole.advanced.kernelConnectionTimeout` (default: 10000ms)

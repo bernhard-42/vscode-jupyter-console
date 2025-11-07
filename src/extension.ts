@@ -97,7 +97,7 @@ export async function activate(context: vscode.ExtensionContext) {
     Logger.log("Detecting Python environment...");
     const pythonPath = await getPythonPath();
     Logger.log(`Python path detected: ${pythonPath}`);
-    statusBarManager.setPythonEnv(pythonPath);
+    await statusBarManager.updatePythonEnv();
     Logger.log("✓ Python environment set in status bar");
 
     // Register status bar

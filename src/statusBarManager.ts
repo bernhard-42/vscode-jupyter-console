@@ -9,6 +9,7 @@
 import * as vscode from "vscode";
 import { KernelManager } from "./kernelManager";
 import { Logger } from "./logger";
+import { getPythonEnvName } from "./pythonIntegration";
 
 export enum KernelState {
   Stopped = "stopped",
@@ -115,64 +116,10 @@ export class StatusBarManager {
   }
 
   /**
-   * Set the Python environment name
+   * Update the Python environment name from the active Python interpreter
    */
-  setPythonEnv(pythonPath: string): void {
-    // Extract environment name from path
-    const parts = pythonPath.split("/");
-
-    // Look for common virtual environment indicators
-    for (let i = parts.length - 1; i >= 0; i--) {
-      if (parts[i] === "bin" && i > 0) {
-        // Get the environment name (parent of bin)
-        this.pythonEnvName = parts[i - 1];
-
-        // If it's a local venv (.venv, venv, env), show project name instead
-        if (
-          this.pythonEnvName === ".venv" ||
-          this.pythonEnvName === "venv" ||
-          this.pythonEnvName === "env"
-        ) {
-          // Get workspace folder name (project name)
-          const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
-          if (workspaceFolder) {
-            const projectName = workspaceFolder.name;
-            this.pythonEnvName = projectName;
-          }
-        }
-        break;
-      }
-    }
-
-    // If no env name found, try to get a meaningful name from the path
-    if (this.pythonEnvName === "Python") {
-      if (pythonPath.includes("venv")) {
-        // Check if it's a local venv in the workspace
-        const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
-        if (
-          workspaceFolder &&
-          pythonPath.startsWith(workspaceFolder.uri.fsPath)
-        ) {
-          // It's a local venv, use project name
-          this.pythonEnvName = workspaceFolder.name;
-        } else {
-          this.pythonEnvName = "venv";
-        }
-      } else if (pythonPath.includes(".conda")) {
-        const condaMatch = pythonPath.match(/envs\/([^\/]+)/);
-        if (condaMatch) {
-          this.pythonEnvName = condaMatch[1];
-        } else {
-          this.pythonEnvName = "conda";
-        }
-      } else if (pythonPath.includes("virtualenv")) {
-        this.pythonEnvName = "virtualenv";
-      } else {
-        // Just show "Python" for system python
-        this.pythonEnvName = "Python";
-      }
-    }
-
+  async updatePythonEnv(): Promise<void> {
+    this.pythonEnvName = await getPythonEnvName();
     this.updateStatusBar();
   }
 

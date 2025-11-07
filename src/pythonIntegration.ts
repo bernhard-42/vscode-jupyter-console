@@ -51,6 +51,41 @@ export async function getPythonPath(): Promise<string> {
 }
 
 /**
+ * Get the active Python environment name
+ */
+export async function getPythonEnvName(): Promise<string> {
+  try {
+    const pythonExtension = vscode.extensions.getExtension("ms-python.python");
+
+    if (pythonExtension) {
+      if (!pythonExtension.isActive) {
+        await pythonExtension.activate();
+      }
+
+      const pythonApi = pythonExtension.exports;
+
+      if (pythonApi && pythonApi.environments) {
+        const environmentPath = pythonApi.environments.getActiveEnvironmentPath();
+        if (environmentPath) {
+          const environment = await pythonApi.environments.resolveEnvironment(environmentPath);
+
+          // Return the environment name if available
+          if (environment?.environment?.name) {
+            return environment.environment.name;
+          }
+        }
+      }
+    }
+
+    // Fallback
+    return "Python";
+  } catch (error) {
+    Logger.error("Error getting Python environment name:", error);
+    return "Python";
+  }
+}
+
+/**
  * Register Python interpreter change listener
  */
 export async function registerPythonInterpreterListener(
@@ -99,8 +134,8 @@ export async function registerPythonInterpreterListener(
       kernelManager.setPythonPath(newPythonPath);
       Logger.log(`✓ Kernel manager updated with new path: ${newPythonPath}`);
 
-      // Update status bar
-      statusBarManager.setPythonEnv(newPythonPath);
+      // Update status bar with environment name
+      await statusBarManager.updatePythonEnv();
       statusBarManager.setState(KernelState.Stopped);
       Logger.log("✓ Status bar updated");
 

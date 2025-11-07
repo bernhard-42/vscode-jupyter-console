@@ -18,12 +18,12 @@ function getConfig() {
 
 /** Delay before starting viewer terminal */
 export function getViewerTerminalStartDelay(): number {
-  return getConfig().get<number>("advanced.viewerTerminalStartDelay", 300);
+  return getConfig().get<number>("advanced.viewerTerminalStartDelay", 1000);
 }
 
-/** Delay before starting console terminal */
+/** Delay before starting console terminal (to allow conda/venv activation to complete) */
 export function getConsoleTerminalStartDelay(): number {
-  return getConfig().get<number>("advanced.consoleTerminalStartDelay", 500);
+  return getConfig().get<number>("advanced.consoleTerminalStartDelay", 1000);
 }
 
 /** Wait time for kernel operations (restart, initial connection) */

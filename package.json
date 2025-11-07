@@ -2,7 +2,7 @@
   "name": "vscode-jupyter-console",
   "displayName": "Jupyter Console",
   "description": "Run Python code with Jupyter kernel and jupyter-console integration",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "publisher": "bernhard-42",
   "license": "MIT",
   "repository": "https://github.com/bernhard-42/vscode-jupyter-console",
@@ -35,15 +35,15 @@
         },
         "jupyterConsole.advanced.viewerTerminalStartDelay": {
           "type": "number",
-          "default": 300,
+          "default": 1000,
           "description": "[Advanced] Delay (in milliseconds) before starting the output viewer terminal. Increase on slower machines.",
           "minimum": 0,
           "order": 10
         },
         "jupyterConsole.advanced.consoleTerminalStartDelay": {
           "type": "number",
-          "default": 500,
-          "description": "[Advanced] Delay (in milliseconds) before starting the console terminal. Increase on slower machines.",
+          "default": 1000,
+          "description": "[Advanced] Delay (in milliseconds) before starting the console terminal. Allows time for conda/virtualenv activation to complete. Increase if activation commands appear in Jupyter Console.",
           "minimum": 0,
           "order": 11
         },
