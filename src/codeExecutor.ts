@@ -71,7 +71,7 @@ export class CodeExecutor {
     }
 
     // Always show the Jupyter Output terminal when executing code
-    this.consoleManager.showConsole();
+    this.consoleManager.showViewer();
 
     try {
       // Execute via Jupyter protocol

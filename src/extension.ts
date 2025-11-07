@@ -58,7 +58,7 @@ async function connectKernelClient(): Promise<void> {
  */
 async function cleanupKernelClient(): Promise<void> {
   // Close terminals
-  consoleManager.closeConsole();
+  consoleManager.closeTerminals();
 
   // Disconnect kernel client
   if (kernelClient) {

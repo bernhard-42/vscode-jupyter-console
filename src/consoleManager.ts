@@ -194,9 +194,18 @@ export class ConsoleManager {
   /**
    * Show the output viewer terminal
    */
-  showConsole(): void {
+  showViewer(): void {
     if (this.viewerTerminal) {
       this.viewerTerminal.show(true);
+    }
+  }
+
+  /**
+   * Show the Jupyter Console terminal
+   */
+  showConsole(): void {
+    if (this.consoleTerminal) {
+      this.consoleTerminal.show(true);
     }
   }
 
@@ -210,7 +219,7 @@ export class ConsoleManager {
   /**
    * Close both terminals
    */
-  closeConsole(): void {
+  closeTerminals(): void {
     if (this.viewerTerminal) {
       this.viewerTerminal.dispose();
       this.viewerTerminal = null;
@@ -225,7 +234,7 @@ export class ConsoleManager {
    * Dispose resources
    */
   dispose(): void {
-    this.closeConsole();
+    this.closeTerminals();
     if (this.terminalCloseListener) {
       this.terminalCloseListener.dispose();
       this.terminalCloseListener = null;
