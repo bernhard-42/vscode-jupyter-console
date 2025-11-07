@@ -70,6 +70,9 @@ export class CodeExecutor {
       await this.consoleManager.startConsole();
     }
 
+    // Always show the Jupyter Output terminal when executing code
+    this.consoleManager.showConsole();
+
     try {
       // Execute via Jupyter protocol
       // ConsoleViewer subscribes to iopub and displays all outputs
