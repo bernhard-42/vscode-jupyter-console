@@ -108,7 +108,7 @@ The extension creates two dedicated terminals. One as a read-only output window,
 
    **To start:** Click the status bar or use the editor menu and select "Start Console Terminals"
 
-Note: This setup uses the least screen footage. In cas the _Jupyter Console_ shoould be larger, you can increase the panel height (which will decrease the editor height), or use the VS Code features _Move Terminal into Editor Area_ or _Move Terminal into New Window_.
+**Note:** This setup uses the least screen footage. In case the _Jupyter Console_ shoould be larger, you can increase the panel height (which will decrease the editor height), or use the VS Code features _Move Terminal into Editor Area_ or _Move Terminal into New Window_.
 
 ![Relocate Termninals](images/relocate-terminal.png)
 
