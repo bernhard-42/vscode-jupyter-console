@@ -68,7 +68,7 @@ When editing Python files, a _Jupyter Kernel_ and a _Run in Console_ menu appear
 
 ### Output Terminals
 
-The extension creates two dedicated terminals:
+The extension creates two dedicated terminals. One as a read-only output window, which shows all input code and outputs of running statements against the started kernel. In case one wants to interactively examine variables or test some code, the second terminal is a standard Jupyter Console, connected to the same kernel. You can see and modify any variables, reset the state without removing imports (huge time saver!), or test some new code.
 
 1. **Jupyter Output Terminal (read only)**
 
