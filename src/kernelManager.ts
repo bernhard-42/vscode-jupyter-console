@@ -86,16 +86,31 @@ export class KernelManager {
       }
 
       Logger.log(`Installing packages: ${command}`);
-      vscode.window.showInformationMessage(`Installing ${packageList}...`);
 
-      const { stdout, stderr } = await execAsync(command);
-      Logger.log(`Installation output: ${stdout}`);
-      if (stderr) {
-        Logger.log(`Installation stderr: ${stderr}`);
-      }
+      // Get current workspace directory for uv add to find pyproject.toml
+      const cwd = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || process.cwd();
+      Logger.log(`Using working directory: ${cwd}`);
 
-      vscode.window.showInformationMessage(
-        `Successfully installed ${packageList}`
+      // Use progress notification that auto-dismisses when done
+      await vscode.window.withProgress(
+        {
+          location: vscode.ProgressLocation.Notification,
+          title: `Installing ${packageList}...`,
+          cancellable: false,
+        },
+        async (progress) => {
+          const { stdout, stderr } = await execAsync(command, { cwd });
+          Logger.log(`Installation output: ${stdout}`);
+          if (stderr) {
+            Logger.log(`Installation stderr: ${stderr}`);
+          }
+        }
+      );
+
+      // Show success message in status bar after progress notification auto-dismisses
+      vscode.window.setStatusBarMessage(
+        `$(check) Successfully installed ${packageList}`,
+        5000
       );
       return true;
     } catch (error) {
