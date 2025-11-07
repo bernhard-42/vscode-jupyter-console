@@ -138,10 +138,10 @@ export class ConsoleManager {
 
       // Create iopub viewer terminal (shown by default)
       try {
-        this.viewerTerminal = vscode.window.createTerminal({
-          name: "Jupyter Output",
-          hideFromUser: false,
-        });
+        this.viewerTerminal = vscode.window.createTerminal(
+          "Jupyter Output",
+          process.platform === "win32" ? process.env.COMSPEC : undefined
+        );
       } catch (error) {
         throw new Error(`Failed to create output viewer terminal: ${error}`);
       }
@@ -162,10 +162,10 @@ export class ConsoleManager {
 
       // Create Jupyter console terminal (separate, not shown by default)
       try {
-        this.consoleTerminal = vscode.window.createTerminal({
-          name: "Jupyter Console",
-          hideFromUser: false,
-        });
+        this.consoleTerminal = vscode.window.createTerminal(
+          "Jupyter Console",
+          process.platform === "win32" ? process.env.COMSPEC : undefined
+        );
       } catch (error) {
         throw new Error(`Failed to create console terminal: ${error}`);
       }
