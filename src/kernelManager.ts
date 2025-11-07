@@ -44,11 +44,6 @@ export class KernelManager {
   private async checkDependencies(): Promise<string[]> {
     const missing: string[] = [];
 
-    // Check pyzmq (imports as 'zmq')
-    if (!(await this.checkPackageInstalled("zmq"))) {
-      missing.push("pyzmq");
-    }
-
     // Check jupyter-console (imports as 'jupyter_console')
     // Note: jupyter-console includes jupyter-client as a dependency
     if (!(await this.checkPackageInstalled("jupyter_console"))) {
@@ -82,8 +77,11 @@ export class KernelManager {
       if (choice === "pip install") {
         command = `"${this.pythonPath}" -m pip install ${packages.join(" ")}`;
       } else if (choice === "uv pip install") {
-        command = `uv pip install --python "${this.pythonPath}" ${packages.join(" ")}`;
-      } else { // "uv add"
+        command = `uv pip install --python "${this.pythonPath}" ${packages.join(
+          " "
+        )}`;
+      } else {
+        // "uv add"
         command = `uv add --python "${this.pythonPath}" ${packages.join(" ")}`;
       }
 
@@ -96,7 +94,9 @@ export class KernelManager {
         Logger.log(`Installation stderr: ${stderr}`);
       }
 
-      vscode.window.showInformationMessage(`Successfully installed ${packageList}`);
+      vscode.window.showInformationMessage(
+        `Successfully installed ${packageList}`
+      );
       return true;
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
