@@ -244,24 +244,13 @@ _Increase these values on slower machines if you experience timeout errors._
    pip install jupyter jupyter-console
    ```
 
-3. **Test kernel manually:**
-
-   ```bash
-   python -m jupyter kernel --kernel=python3
-   ```
-
-4. **Check Output panel:**
+3. **Check Output panel:**
    - View → Output → Select "Jupyter Console" from dropdown
 
 #### Code execution hangs
 
 - Press `Cmd+Alt+I` / `Ctrl+Alt+I` to interrupt
 - If unresponsive, restart kernel via status bar
-
-#### Console terminal not showing output
-
-- The **Jupyter Output** terminal receives all output automatically
-- The **Jupyter Console** terminal is interactive - type commands there manually
 
 #### Extension not detecting Python environment
 
@@ -306,6 +295,7 @@ The extension uses the **Jupyter messaging protocol** directly via ZMQ for fast,
 ┌──────────────────┐      ┌──────────────────┐   ┌──────────────┐
 │  iopub_viewer.py │      │ Jupyter Console  │   │ KernelClient │
 │    (Python)      │      │                  │   │  (IOPub Sub) │
+│    OPTIONAL!     │      │                  │   │              │
 │                  │      │                  │   │              │
 │ Subscribes to    │      │ Interactive      │   │ Receives:    │
 │ iopub channel    │      │ IPython shell    │   │ - status     │
@@ -378,14 +368,13 @@ The extension uses the **Jupyter messaging protocol** directly via ZMQ for fast,
 
 **Responsibilities:**
 
-- Starts iopub_viewer.py in a hidden terminal (Jupyter Output)
-- Optionally starts jupyter-console in a terminal (Jupyter Console)
-- Uses `hideFromUser: true` option to prevent Python extension venv activation
+- Starts jupyter-console in a terminal (Jupyter Console)
+- Optionally starts iopub_viewer.py in a hidden terminal (Jupyter Output)
 
 **Terminal Lifecycle:**
 
-- Viewer terminal: Auto-started with kernel
 - Console terminal: Started on demand via "Start Console Terminals" command
+- Viewer terminal: Auto-started with kernel (optional)
 - Both closed when kernel stops or extension deactivates
 
 #### 4. CodeExecutor (`src/codeExecutor.ts`)
@@ -466,7 +455,7 @@ pythonApi.environments.onDidChangeActiveEnvironmentPath((e) => {
 });
 ```
 
-#### 7. iopub_viewer.py (Python Script)
+#### 7. Optional: iopub_viewer.py (Python Script)
 
 **Purpose:** Displays kernel output in terminal with formatting
 
