@@ -7,6 +7,7 @@
  */
 
 import * as vscode from "vscode";
+import * as path from "path";
 import { ConsoleManager } from "./consoleManager";
 import { CellDetector } from "./cellDetector";
 import { KernelClient } from "./kernelClient";
@@ -73,14 +74,21 @@ export class CodeExecutor {
     // Always show the Jupyter Output terminal when executing code
     this.consoleManager.showViewer();
 
+    // Get the filename from the active editor
+    const editor = vscode.window.activeTextEditor;
+    const filename = editor
+      ? path.basename(editor.document.fileName)
+      : "editor";
+
     try {
       // Execute via Jupyter protocol
       // ConsoleViewer subscribes to iopub and displays all outputs
-      await this.kernelClient.executeCode(code);
+      // Prepend the Out[filename] label to the code as a single execution
+      const codeWithLabel = `print("\\n\\033[31mOut[${filename}]:\\033[0m")\n${code}`;
+      await this.kernelClient.executeCode(codeWithLabel);
     } catch (error) {
       vscode.window.showErrorMessage(`Execution error: ${error}`);
     }
-    this.consoleManager.sendToConsole("\n");
   }
 
   /**
