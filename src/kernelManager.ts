@@ -214,10 +214,13 @@ export class KernelManager {
       ): boolean => {
         // Look for connection file path in output
         // KernelManager prints the full path directly, e.g.:
-        // /Users/user/Library/Jupyter/runtime/kernel-xxx.json
+        // /Users/user/Library/Jupyter/runtime/kernel-xxx.json (Unix)
+        // C:\Users\user\AppData\Local\Temp\kernel-xxx.json (Windows)
 
-        // Match any line containing a .json file path
-        const match = buffer.match(/(\S+\.json)/);
+        // Match absolute file paths ending in .json
+        // Unix: starts with /
+        // Windows: starts with drive letter like C:\
+        const match = buffer.match(/((?:\/|[A-Za-z]:\\)[^\s]+\.json)/);
         if (match) {
           this.connectionFile = match[1].trim();
           Logger.log(
