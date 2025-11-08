@@ -63,6 +63,46 @@ export class KernelClient {
   }
 
   /**
+   * Validate connection info has all required fields
+   */
+  private validateConnectionInfo(info: any): void {
+    const requiredFields = [
+      "ip",
+      "transport",
+      "shell_port",
+      "iopub_port",
+      "stdin_port",
+      "control_port",
+      "hb_port",
+      "signature_scheme",
+      "key",
+    ];
+
+    const missingFields = requiredFields.filter((field) => !(field in info));
+
+    if (missingFields.length > 0) {
+      throw new Error(
+        `Connection file is missing required fields: ${missingFields.join(", ")}`
+      );
+    }
+
+    // Validate port numbers are valid
+    const portFields = [
+      "shell_port",
+      "iopub_port",
+      "stdin_port",
+      "control_port",
+      "hb_port",
+    ];
+    for (const field of portFields) {
+      const port = info[field];
+      if (typeof port !== "number" || port < 1 || port > 65535) {
+        throw new Error(`Invalid port number for ${field}: ${port}`);
+      }
+    }
+  }
+
+  /**
    * Connect to a kernel using its connection file
    */
   async connect(connectionFile: string): Promise<void> {
@@ -85,6 +125,9 @@ export class KernelClient {
       if (!this.connectionInfo) {
         throw new Error("Connection info is null after parsing");
       }
+
+      // Validate connection info has all required fields
+      this.validateConnectionInfo(this.connectionInfo);
 
       // Create ZMQ sockets
       this.shellSocket = new zmq.Dealer();
