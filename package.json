@@ -216,7 +216,7 @@
   "scripts": {
     "vscode:prepublish": "yarn compile",
     "compile": "tsc -p ./ && yarn copy-python",
-    "copy-python": "cp src/iopub_viewer.py out/iopub_viewer.py",
+    "copy-python": "cp src/iopub_viewer.py out/iopub_viewer.py && cp src/kernel_manager.py out/kernel_manager.py",
     "watch": "tsc -watch -p ./",
     "pretest": "yarn compile && yarn lint",
     "lint": "eslint src --ext ts",
