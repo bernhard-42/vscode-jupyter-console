@@ -161,19 +161,25 @@ export class KernelClient {
       if (this.shellSocket) {
         try {
           this.shellSocket.close();
-        } catch {}
+        } catch {
+          // Ignore cleanup errors
+        }
         this.shellSocket = null;
       }
       if (this.iopubSocket) {
         try {
           this.iopubSocket.close();
-        } catch {}
+        } catch {
+          // Ignore cleanup errors
+        }
         this.iopubSocket = null;
       }
       if (this.controlSocket) {
         try {
           this.controlSocket.close();
-        } catch {}
+        } catch {
+          // Ignore cleanup errors
+        }
         this.controlSocket = null;
       }
       this.isConnected = false;
