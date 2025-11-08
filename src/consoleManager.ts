@@ -149,7 +149,7 @@ export class ConsoleManager {
       const config = vscode.workspace.getConfiguration("jupyterConsole");
       const enableOutputViewer = config.get<boolean>(
         "enableOutputViewer",
-        true
+        false
       );
       const truncateLines = config.get<number>("truncateInputLinesMax", 10);
 
@@ -219,7 +219,7 @@ export class ConsoleManager {
    */
   showViewer(): void {
     const config = vscode.workspace.getConfiguration("jupyterConsole");
-    const enableOutputViewer = config.get<boolean>("enableOutputViewer", true);
+    const enableOutputViewer = config.get<boolean>("enableOutputViewer", false);
 
     if (!enableOutputViewer) {
       // If viewer is disabled, show the console instead
