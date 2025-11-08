@@ -48,6 +48,7 @@ export class KernelClient {
   private sessionId: string;
   private isConnected: boolean = false;
   private outputCallbacks: Map<string, (output: string) => void> = new Map();
+  private completionCallbacks: Map<string, () => void> = new Map();
   private iopubListenerRunning: boolean = false;
   private iopubListenerPromise: Promise<void> | null = null;
   private statusCallback: ((state: "busy" | "idle") => void) | null = null;
@@ -254,9 +255,13 @@ export class KernelClient {
                 msgType === "status" &&
                 contentObj.execution_state === "idle"
               ) {
-                // Execution complete - signal completion and clean up
-                Logger.log("Execution complete, sending completion signal");
-                callback("__COMPLETE__");
+                // Execution complete - call completion callback and clean up
+                Logger.log("Execution complete, calling completion callback");
+                const completionCallback = this.completionCallbacks.get(parentMsgId);
+                if (completionCallback) {
+                  completionCallback();
+                  this.completionCallbacks.delete(parentMsgId);
+                }
                 this.outputCallbacks.delete(parentMsgId);
               }
             }
@@ -350,7 +355,7 @@ export class KernelClient {
 
     // Get configuration to determine silent mode
     const config = vscode.workspace.getConfiguration("jupyterConsole");
-    const enableOutputViewer = config.get<boolean>("enableOutputViewer", true);
+    const enableOutputViewer = config.get<boolean>("enableOutputViewer", false);
 
     // silent: true for single terminal (no output viewer)
     // silent: false for two terminals (with output viewer)
@@ -367,32 +372,29 @@ export class KernelClient {
 
     // Create a promise that resolves when execution completes
     return new Promise<void>((resolve, reject) => {
-      const wrappedCallback = (output: string) => {
-        // Call user's callback if provided
-        if (onOutput && output !== "__COMPLETE__") {
-          onOutput(output);
-        }
+      // Register output callback if provided
+      if (onOutput) {
+        this.outputCallbacks.set(msg.header.msg_id, onOutput);
+      }
 
-        // Check for completion signal
-        if (output === "__COMPLETE__") {
-          Logger.log("Received completion signal, resolving promise");
-          resolve();
-        }
+      // Register completion callback
+      const completionCallback = () => {
+        Logger.log("Received completion signal, resolving promise");
+        resolve();
       };
-
-      // Register callback for this execution
-      Logger.log(`Registering callback for msg_id: ${msg.header.msg_id}`);
-      this.outputCallbacks.set(msg.header.msg_id, wrappedCallback);
+      this.completionCallbacks.set(msg.header.msg_id, completionCallback);
 
       // Send execute request
+      Logger.log(`Registering callbacks for msg_id: ${msg.header.msg_id}`);
       Logger.log("Sending execute request to kernel");
       this.sendMessage(this.shellSocket!, msg).catch(reject);
 
       // Timeout after CODE_EXECUTION_TIMEOUT
       setTimeout(() => {
-        if (this.outputCallbacks.has(msg.header.msg_id)) {
+        if (this.completionCallbacks.has(msg.header.msg_id)) {
           Logger.log("Execution timeout - no completion received");
           this.outputCallbacks.delete(msg.header.msg_id);
+          this.completionCallbacks.delete(msg.header.msg_id);
           reject(new Error("Execution timeout"));
         }
       }, getCodeExecutionTimeout());
@@ -429,7 +431,9 @@ export class KernelClient {
 
     // Clear all callbacks
     this.outputCallbacks.clear();
+    this.completionCallbacks.clear();
 
+    // Close sockets to break the listener loop
     if (this.shellSocket) {
       await this.shellSocket.close();
       this.shellSocket = null;
