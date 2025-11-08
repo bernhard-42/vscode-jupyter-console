@@ -219,6 +219,7 @@
     "copy-python": "cp src/iopub_viewer.py out/iopub_viewer.py && cp src/kernel_manager.py out/kernel_manager.py",
     "watch": "tsc -watch -p ./",
     "pretest": "yarn compile && yarn lint",
+    "test": "node ./out/test/runTest.js",
     "lint": "eslint src --ext ts",
     "package": "vsce package --yarn",
     "package:win32": "vsce package --yarn --target win32-x64",
@@ -228,13 +229,20 @@
     "release": "VERSION=$(node -p \"require('./package.json').version\") && git add . && (git diff --cached --quiet || git commit -m \"building release $VERSION\") && git tag \"v$VERSION\""
   },
   "devDependencies": {
+    "@types/chai": "^5.2.3",
+    "@types/mocha": "^10.0.10",
     "@types/node": "18.x",
+    "@types/sinon": "^17.0.4",
     "@types/uuid": "^11.0.0",
     "@types/vscode": "^1.85.0",
     "@typescript-eslint/eslint-plugin": "^6.13.0",
     "@typescript-eslint/parser": "^6.13.0",
+    "@vscode/test-electron": "^2.5.2",
     "@vscode/vsce": "^3.2.1",
+    "chai": "^6.2.0",
     "eslint": "^8.54.0",
+    "mocha": "^11.7.5",
+    "sinon": "^21.0.0",
     "typescript": "^5.3.2"
   },
   "dependencies": {
