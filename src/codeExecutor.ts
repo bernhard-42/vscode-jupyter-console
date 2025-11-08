@@ -117,7 +117,7 @@ export class CodeExecutor {
         advancer = (ed) => CellDetector.moveCursorToEndOfSelection(ed);
         break;
 
-      case ExecutionType.Cell:
+      case ExecutionType.Cell: {
         const cell = CellDetector.getCurrentCell(editor);
         code = cell?.code;
         if (!cell?.code.trim()) {
@@ -126,6 +126,7 @@ export class CodeExecutor {
         }
         advancer = (ed) => CellDetector.moveCursorToNextCell(ed);
         break;
+      }
     }
 
     if (code?.trim()) {
