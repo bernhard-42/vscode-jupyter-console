@@ -8,6 +8,7 @@
 
 import * as vscode from "vscode";
 import * as cp from "child_process";
+import * as path from "path";
 import { Logger } from "./logger";
 import {
   getKernelConnectionTimeout,
@@ -149,24 +150,16 @@ export class KernelManager {
     try {
       // Start kernel using jupyter_client.KernelManager to use the current Python environment
       // This avoids kernelspec lookup and ensures we use the right kernel
-      const pythonScript = `
-from jupyter_client import KernelManager
-import sys, time
-km = KernelManager()
-km.start_kernel()
-print(km.connection_file, flush=True)
-try:
-    while km.is_alive():
-        time.sleep(1)
-except KeyboardInterrupt:
-    km.shutdown_kernel()
-`;
-
-      Logger.log(
-        `Starting kernel with command: ${this.pythonPath} -c "<kernel script>"`
+      const kernelManagerScript = path.join(
+        __dirname,
+        "kernel_manager.py"
       );
 
-      this.kernelProcess = cp.spawn(this.pythonPath, ["-c", pythonScript], {
+      Logger.log(
+        `Starting kernel with command: ${this.pythonPath} "${kernelManagerScript}"`
+      );
+
+      this.kernelProcess = cp.spawn(this.pythonPath, [kernelManagerScript], {
         env: { ...process.env },
         shell: false,
       });
