@@ -194,7 +194,7 @@ export class ConsoleManager {
         if (this.consoleTerminal) {
           // Only include other output if Jupyter Output viewer is disabled
           const includeOtherOutput = !enableOutputViewer
-            ? " --ZMQTerminalInteractiveShell.include_other_output=True --ZMQTerminalInteractiveShell.other_output_prefix='Out:'"
+            ? " --ZMQTerminalInteractiveShell.include_other_output=True"
             : "";
           const command = `"${pythonPath}" -m jupyter console${includeOtherOutput} --existing "${connectionFile}"`;
           this.consoleTerminal.sendText(command, true);
