@@ -231,6 +231,7 @@ export class KernelClient {
             const parentMsgId = parentHeaderObj.msg_id;
             const callback = this.outputCallbacks.get(parentMsgId);
 
+            // Handle output messages if callback registered
             if (callback) {
               Logger.log(`Received message type: ${msgType}`);
 
@@ -251,17 +252,19 @@ export class KernelClient {
                 callback(
                   `Error: ${contentObj.ename}: ${contentObj.evalue}\n${traceback}\n`
                 );
-              } else if (
-                msgType === "status" &&
-                contentObj.execution_state === "idle"
-              ) {
-                // Execution complete - call completion callback and clean up
+              }
+            }
+
+            // Handle completion (independent of output callback)
+            if (
+              msgType === "status" &&
+              contentObj.execution_state === "idle"
+            ) {
+              const completionCallback = this.completionCallbacks.get(parentMsgId);
+              if (completionCallback) {
                 Logger.log("Execution complete, calling completion callback");
-                const completionCallback = this.completionCallbacks.get(parentMsgId);
-                if (completionCallback) {
-                  completionCallback();
-                  this.completionCallbacks.delete(parentMsgId);
-                }
+                completionCallback();
+                this.completionCallbacks.delete(parentMsgId);
                 this.outputCallbacks.delete(parentMsgId);
               }
             }
