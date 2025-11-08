@@ -49,6 +49,7 @@ export class KernelClient {
   private isConnected: boolean = false;
   private outputCallbacks: Map<string, (output: string) => void> = new Map();
   private iopubListenerRunning: boolean = false;
+  private iopubListenerPromise: Promise<void> | null = null;
   private statusCallback: ((state: "busy" | "idle") => void) | null = null;
 
   constructor() {
@@ -197,8 +198,8 @@ export class KernelClient {
 
     this.iopubListenerRunning = true;
 
-    // Run listener in background
-    (async () => {
+    // Store the listener promise so we can wait for it to complete on disconnect
+    this.iopubListenerPromise = (async () => {
       if (!this.iopubSocket) return;
 
       try {
@@ -267,6 +268,7 @@ export class KernelClient {
         Logger.error("Iopub listener error:", error);
       } finally {
         this.iopubListenerRunning = false;
+        this.iopubListenerPromise = null;
       }
     })();
   }
@@ -441,6 +443,11 @@ export class KernelClient {
     if (this.controlSocket) {
       await this.controlSocket.close();
       this.controlSocket = null;
+    }
+
+    // Wait for iopub listener to finish processing
+    if (this.iopubListenerPromise) {
+      await this.iopubListenerPromise;
     }
 
     Logger.log("Disconnected from kernel");
