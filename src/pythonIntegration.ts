@@ -29,8 +29,16 @@ export async function getPythonPath(): Promise<string> {
       // Get active environment for current workspace
       if (pythonApi && pythonApi.environments) {
         const activeEnv = pythonApi.environments.getActiveEnvironmentPath();
-        if (activeEnv && activeEnv.path) {
-          return activeEnv.path;
+        if (activeEnv) {
+          // Resolve the environment to get the actual executable path
+          const resolvedEnv = await pythonApi.environments.resolveEnvironment(activeEnv);
+          if (resolvedEnv?.executable?.uri?.fsPath) {
+            return resolvedEnv.executable.uri.fsPath;
+          }
+          // Fallback to activeEnv.path if resolution fails
+          if (activeEnv.path) {
+            return activeEnv.path;
+          }
         }
       }
     }
