@@ -27,6 +27,16 @@ interface CommandContext {
 }
 
 /**
+ * Helper function to set up Python environment for kernel operations
+ * Used by both startKernel and restartKernel commands
+ */
+async function setupPythonEnvironment(ctx: CommandContext): Promise<void> {
+  const pythonPath = await ctx.getPythonPath();
+  ctx.kernelManager.setPythonPath(pythonPath);
+  await ctx.statusBarManager.updatePythonEnv();
+}
+
+/**
  * Register all extension commands
  */
 export function registerCommands(
@@ -57,10 +67,8 @@ export function registerCommands(
   context.subscriptions.push(
     vscode.commands.registerCommand("jupyterConsole.startKernel", async () => {
       try {
-        // Get the current Python interpreter before starting
-        const pythonPath = await ctx.getPythonPath();
-        ctx.kernelManager.setPythonPath(pythonPath);
-        await ctx.statusBarManager.updatePythonEnv();
+        // Set up Python environment before starting
+        await setupPythonEnvironment(ctx);
 
         ctx.statusBarManager.setState(KernelState.Starting);
 
@@ -96,10 +104,8 @@ export function registerCommands(
         try {
           await ctx.cleanupKernelClient();
 
-          // Get the current Python interpreter before restarting
-          const pythonPath = await ctx.getPythonPath();
-          ctx.kernelManager.setPythonPath(pythonPath);
-          await ctx.statusBarManager.updatePythonEnv();
+          // Set up Python environment before restarting
+          await setupPythonEnvironment(ctx);
 
           ctx.statusBarManager.setState(KernelState.Starting);
           await ctx.kernelManager.restartKernel();
