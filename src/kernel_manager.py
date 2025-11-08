@@ -12,7 +12,6 @@ This ensures the kernel uses the current Python environment, not a global kernel
 """
 
 from jupyter_client import KernelManager
-import sys
 import time
 
 

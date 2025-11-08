@@ -205,12 +205,12 @@ export class KernelClient {
 
       try {
         for await (const [
-          identities,
-          delimiter,
-          signature,
+          , // identities
+          , // delimiter
+          , // signature
           header,
           parentHeader,
-          metadata,
+          , // metadata
           content,
         ] of this.iopubSocket) {
           try {

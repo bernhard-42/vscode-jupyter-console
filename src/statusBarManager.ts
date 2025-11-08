@@ -42,7 +42,7 @@ export class StatusBarManager {
 
     // Register event handlers to show/hide status bar based on active editor
     this.disposables.push(
-      vscode.window.onDidChangeActiveTextEditor((editor) => {
+      vscode.window.onDidChangeActiveTextEditor((_editor) => {
         this.updateStatusBar();
       })
     );

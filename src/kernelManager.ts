@@ -100,7 +100,7 @@ export class KernelManager {
           title: `Installing ${packageList}...`,
           cancellable: false,
         },
-        async (progress) => {
+        async (_progress) => {
           const { stdout, stderr } = await execAsync(command, { cwd });
           Logger.log(`Installation output: ${stdout}`);
           if (stderr) {
@@ -161,11 +161,9 @@ export class KernelManager {
         shell: false,
       });
 
-      // Collect stderr for debugging
-      let errorOutput = "";
+      // Log stderr for debugging
       this.kernelProcess.stderr?.on("data", (data) => {
         const text = data.toString();
-        errorOutput += text;
 
         // Filter out expected shutdown message
         if (!text.includes("Parent appears to have exited, shutting down")) {
