@@ -29,6 +29,8 @@ export class CellDetector {
 
   /**
    * Find all cell boundaries in the document
+   * Returns array of line numbers where cells start/end
+   * Note: Internal operations use local search for efficiency
    */
   static findCellBoundaries(document: vscode.TextDocument): number[] {
     const boundaries: number[] = [0]; // Start with beginning of file
@@ -45,46 +47,71 @@ export class CellDetector {
   }
 
   /**
+   * Find cell boundaries around a specific line using local search
+   * Returns { start, end } where start and end are line numbers
+   */
+  private static findCellBoundariesAtLine(
+    document: vscode.TextDocument,
+    lineNumber: number
+  ): { start: number; end: number } {
+    // Search backwards for cell start (either "# %%" or beginning of file)
+    let start = 0;
+    for (let i = lineNumber; i >= 0; i--) {
+      const line = document.lineAt(i);
+      if (line.text.trim().startsWith("# %%")) {
+        start = i;
+        break;
+      }
+    }
+
+    // Search forwards for cell end (either next "# %%" or end of file)
+    let end = document.lineCount;
+    for (let i = lineNumber + 1; i < document.lineCount; i++) {
+      const line = document.lineAt(i);
+      if (line.text.trim().startsWith("# %%")) {
+        end = i;
+        break;
+      }
+    }
+
+    return { start, end };
+  }
+
+  /**
    * Get the cell that contains the given line number
    */
   static getCellAtLine(
     document: vscode.TextDocument,
     lineNumber: number
   ): Cell | null {
-    const boundaries = this.findCellBoundaries(document);
+    // Validate line number is within document bounds
+    if (lineNumber < 0 || lineNumber >= document.lineCount) {
+      return null;
+    }
 
-    for (let i = 0; i < boundaries.length - 1; i++) {
-      const start = boundaries[i];
-      const end = boundaries[i + 1];
+    const { start, end } = this.findCellBoundariesAtLine(document, lineNumber);
 
-      if (lineNumber >= start && lineNumber < end) {
-        // Found the cell
-        let cellStart = start;
+    // Determine actual cell start (skip "# %%" marker if present)
+    let cellStart = start;
+    if (document.lineAt(start).text.trim().startsWith("# %%")) {
+      cellStart = start + 1;
+    }
 
-        // If this cell starts with a # %% marker, skip that line
-        if (document.lineAt(start).text.trim().startsWith("# %%")) {
-          cellStart = start + 1;
-        }
-
-        // Extract code from cell, skipping empty lines at the start
-        const lines: string[] = [];
-        for (let j = cellStart; j < end; j++) {
-          const lineText = document.lineAt(j).text;
-          // Skip # %% markers
-          if (!lineText.trim().startsWith("# %%")) {
-            lines.push(lineText);
-          }
-        }
-
-        return {
-          startLine: cellStart,
-          endLine: end - 1,
-          code: lines.join("\n").trim(),
-        };
+    // Extract code from cell
+    const lines: string[] = [];
+    for (let j = cellStart; j < end; j++) {
+      const lineText = document.lineAt(j).text;
+      // Skip # %% markers (shouldn't encounter them, but be safe)
+      if (!lineText.trim().startsWith("# %%")) {
+        lines.push(lineText);
       }
     }
 
-    return null;
+    return {
+      startLine: cellStart,
+      endLine: end - 1,
+      code: lines.join("\n").trim(),
+    };
   }
 
   /**
@@ -145,29 +172,19 @@ export class CellDetector {
    */
   static moveCursorToNextCell(editor: vscode.TextEditor): void {
     const currentLine = editor.selection.active.line;
-    const boundaries = this.findCellBoundaries(editor.document);
+    const document = editor.document;
 
-    // Find the current cell
-    for (let i = 0; i < boundaries.length - 1; i++) {
-      const start = boundaries[i];
-      const end = boundaries[i + 1];
-
-      if (currentLine >= start && currentLine < end) {
-        // Found current cell, move to next cell
-        if (i + 1 < boundaries.length - 1) {
-          const nextCellStart = boundaries[i + 1];
-          // Skip the # %% marker line
-          let targetLine = nextCellStart;
-          if (
-            editor.document.lineAt(nextCellStart).text.trim().startsWith("# %%")
-          ) {
-            targetLine = nextCellStart + 1;
-          }
-
-          this.moveCursorToLine(editor, targetLine);
-        }
-        break;
+    // Search forward from current line for the next "# %%" marker
+    for (let i = currentLine + 1; i < document.lineCount; i++) {
+      const line = document.lineAt(i);
+      if (line.text.trim().startsWith("# %%")) {
+        // Found next cell marker, move to line after it
+        const targetLine = Math.min(i + 1, document.lineCount - 1);
+        this.moveCursorToLine(editor, targetLine);
+        return;
       }
     }
+
+    // No next cell found - already at last cell, do nothing
   }
 }
