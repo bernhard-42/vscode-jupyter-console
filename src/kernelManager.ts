@@ -150,10 +150,7 @@ export class KernelManager {
     try {
       // Start kernel using jupyter_client.KernelManager to use the current Python environment
       // This avoids kernelspec lookup and ensures we use the right kernel
-      const kernelManagerScript = path.join(
-        __dirname,
-        "kernel_manager.py"
-      );
+      const kernelManagerScript = path.join(__dirname, "kernel_manager.py");
 
       Logger.log(
         `Starting kernel with command: ${this.pythonPath} "${kernelManagerScript}"`
