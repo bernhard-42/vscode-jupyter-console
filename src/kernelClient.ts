@@ -6,6 +6,7 @@
  * https://claude.ai/claude-code
  */
 
+import * as vscode from "vscode";
 import * as zmq from "zeromq";
 import * as crypto from "crypto";
 import { v4 as uuidv4 } from "uuid";
@@ -296,12 +297,20 @@ export class KernelClient {
       throw new Error("Not connected to kernel");
     }
 
+    // Get configuration to determine silent mode
+    const config = vscode.workspace.getConfiguration("jupyterConsole");
+    const enableOutputViewer = config.get<boolean>("enableOutputViewer", true);
+
+    // silent: true for single terminal (no output viewer)
+    // silent: false for two terminals (with output viewer)
+    const silent = !enableOutputViewer;
+
     const msg = this.createMessage("execute_request", {
       code: code,
-      silent: false,
-      store_history: true,
+      silent: silent,
+      store_history: false,
       user_expressions: {},
-      allow_stdin: false,
+      allow_stdin: true,
       stop_on_error: false,
     });
 
