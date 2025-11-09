@@ -74,18 +74,25 @@ export class CodeExecutor {
     // Always show the Jupyter Output terminal when executing code
     this.consoleManager.showViewer();
 
-    // Get the filename from the active editor
-    const editor = vscode.window.activeTextEditor;
-    const filename = editor
-      ? path.basename(editor.document.fileName)
-      : "editor";
+    // Check if Output Viewer is enabled
+    const config = vscode.workspace.getConfiguration("jupyterConsole");
+    const enableOutputViewer = config.get<boolean>("enableOutputViewer", false);
+
+    // In single-terminal mode, add label to distinguish outputs from different files
+    let codeToExecute = code;
+    if (!enableOutputViewer) {
+      const editor = vscode.window.activeTextEditor;
+      const filename = editor
+        ? path.basename(editor.document.fileName)
+        : "editor";
+      codeToExecute = `print("\\n\\033[31mOut[${filename}]:\\033[0m")\n${code}`;
+    }
 
     try {
       // Execute via Jupyter protocol
-      // ConsoleViewer subscribes to iopub and displays all outputs
-      // Prepend the Out[filename] label to the code as a single execution
-      const codeWithLabel = `print("\\n\\033[31mOut[${filename}]:\\033[0m")\n${code}`;
-      await this.kernelClient.executeCode(codeWithLabel);
+      // In two-terminal mode: Output Viewer shows outputs
+      // In single-terminal mode: Label helps distinguish which file output came from
+      await this.kernelClient.executeCode(codeToExecute);
     } catch (error) {
       vscode.window.showErrorMessage(`Execution error: ${error}`);
     }
