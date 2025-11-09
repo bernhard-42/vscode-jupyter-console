@@ -165,7 +165,9 @@ describe("KernelClient Integration Tests", () => {
     it("Should send code and receive iopub messages", async function () {
       this.timeout(testTimeout);
 
+      // Clear messages and wait for clean state
       iopubMonitor.clearMessages();
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       const code = "print('Hello from kernel')";
 
@@ -177,10 +179,12 @@ describe("KernelClient Integration Tests", () => {
       // Wait a bit for messages to arrive
       await new Promise((resolve) => setTimeout(resolve, 3000));
 
-      // Check that we received iopub messages
+      const messageCount = iopubMonitor.getMessages().length;
+
+      // Check that we received iopub messages (at minimum, status messages)
       assert.ok(
         iopubMonitor.hasMessages(),
-        "Should have received iopub messages from kernel"
+        `Should have received iopub messages from kernel (got ${messageCount} messages)`
       );
     });
 
