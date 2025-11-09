@@ -18,6 +18,7 @@ import {
   getPythonPath,
   registerPythonInterpreterListener,
 } from "./pythonIntegration";
+import { CellCodeLensProvider } from "./codeLensProvider";
 
 let kernelManager: KernelManager;
 let consoleManager: ConsoleManager;
@@ -120,6 +121,17 @@ export async function activate(context: vscode.ExtensionContext) {
       cleanupKernelClient,
     });
     Logger.log("✓ All commands registered");
+
+    // Register CodeLens provider for cell markers
+    Logger.log("Registering CodeLens provider...");
+    const codeLensProvider = new CellCodeLensProvider();
+    context.subscriptions.push(
+      vscode.languages.registerCodeLensProvider(
+        { language: "python" },
+        codeLensProvider
+      )
+    );
+    Logger.log("✓ CodeLens provider registered");
 
     // Listen for Python interpreter changes
     await registerPythonInterpreterListener(

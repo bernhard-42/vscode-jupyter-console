@@ -117,6 +117,10 @@
       {
         "command": "jupyterConsole.runSelectionAndAdvance",
         "title": "Jupyter Console: Run Selection/Line and Advance"
+      },
+      {
+        "command": "jupyterConsole.runAll",
+        "title": "Jupyter Console: Run All"
       }
     ],
     "submenus": [
@@ -182,6 +186,10 @@
         {
           "command": "jupyterConsole.runSelection",
           "group": "2_run@2"
+        },
+        {
+          "command": "jupyterConsole.runAll",
+          "group": "3_all@1"
         }
       ]
     },

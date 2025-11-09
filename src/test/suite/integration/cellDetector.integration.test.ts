@@ -47,19 +47,6 @@ print("done")`;
     await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
   });
 
-  it("Should find all cell boundaries in real document", () => {
-    const boundaries = CellDetector.findCellBoundaries(document);
-
-    // Should have: start(0), 3 cell markers, empty cell marker, final cell marker, end
-    assert.ok(boundaries.length >= 5, `Expected at least 5 boundaries, got ${boundaries.length}`);
-    assert.strictEqual(boundaries[0], 0, "First boundary should be line 0");
-    assert.strictEqual(
-      boundaries[boundaries.length - 1],
-      document.lineCount,
-      "Last boundary should be document line count"
-    );
-  });
-
   it("Should extract first cell correctly from real document", () => {
     const cell = CellDetector.getCellAtLine(document, 1);
 
@@ -69,20 +56,6 @@ print("done")`;
       "Should contain first cell content"
     );
     assert.ok(cell!.code.includes("x = 1"), "Should include variable assignment");
-  });
-
-  it("Should get current cell from editor selection", () => {
-    // Move cursor to line 5 (should be in second cell)
-    const position = new vscode.Position(5, 0);
-    editor.selection = new vscode.Selection(position, position);
-
-    const cell = CellDetector.getCurrentCell(editor);
-
-    assert.ok(cell !== null, "Should find cell at cursor");
-    assert.ok(
-      cell!.code.includes("import numpy") || cell!.code.includes("calculate"),
-      "Should be in second cell"
-    );
   });
 
   it("Should get current line from editor", () => {
@@ -202,5 +175,72 @@ print("done")`;
         );
       }
     }
+  });
+
+  describe("getCodeInRange integration tests", () => {
+    it("Should extract code from entire document with real editor", () => {
+      const code = CellDetector.getCodeInRange(document);
+
+      assert.ok(code !== null, "Should return code");
+      assert.ok(code!.includes("Hello from first cell"), "Should include first cell");
+      assert.ok(code!.includes("import numpy"), "Should include imports");
+      assert.ok(!code!.includes("# %%"), "Should skip cell markers");
+    });
+
+    it("Should extract code from specific range", () => {
+      const code = CellDetector.getCodeInRange(document, {
+        fromLine: 0,
+        toLine: 5,
+      });
+
+      assert.ok(code !== null, "Should return code");
+      assert.ok(code!.length > 0, "Should have content");
+    });
+
+    it("Should include markers when skipCellMarkers is false", () => {
+      const code = CellDetector.getCodeInRange(document, {
+        skipCellMarkers: false,
+      });
+
+      assert.ok(code !== null, "Should return code");
+      assert.ok(code!.includes("# %%"), "Should include cell markers");
+    });
+  });
+
+  describe("getCodeAtLine integration tests", () => {
+    it("Should get single cell code", () => {
+      const code = CellDetector.getCodeAtLine(document, 5, false, false);
+
+      assert.ok(code !== null, "Should return code");
+      assert.ok(code!.length > 0, "Should have content");
+    });
+
+    it("Should get all code above a line", () => {
+      // Get code above line 10 (should include first cells)
+      const code = CellDetector.getCodeAtLine(document, 10, true, false);
+
+      assert.ok(code !== null, "Should return code");
+      assert.ok(
+        code!.includes("Hello from first cell") || code!.includes("import numpy"),
+        "Should include early cells"
+      );
+    });
+
+    it("Should get all code below a line", () => {
+      // Get code below line 5 (should include later cells)
+      const code = CellDetector.getCodeAtLine(document, 5, false, true);
+
+      assert.ok(code !== null, "Should return code");
+      assert.ok(code!.length > 0, "Should have content from later cells");
+    });
+
+    it("Should get all code in document", () => {
+      const code = CellDetector.getCodeAtLine(document, 0, true, true);
+
+      assert.ok(code !== null, "Should return code");
+      assert.ok(code!.includes("Hello from first cell"), "Should include first cell");
+      assert.ok(code!.includes("print(\"done\")"), "Should include last cell");
+      assert.ok(!code!.includes("# %%"), "Should skip cell markers");
+    });
   });
 });

@@ -36,21 +36,6 @@ print(result)`;
     });
   });
 
-  it("findCellBoundaries should identify all cell markers", () => {
-    const boundaries = CellDetector.findCellBoundaries(testDocument);
-
-    // Expected boundaries: [0, line with "# %% Second", line with "# %% Third", line with "# %% Fourth", end]
-    assert.strictEqual(boundaries[0], 0, "First boundary should be 0");
-    assert.strictEqual(
-      boundaries[boundaries.length - 1],
-      testDocument.lineCount,
-      "Last boundary should be document line count"
-    );
-
-    // Should have 5 boundaries (start, 3 cell markers, end)
-    assert.strictEqual(boundaries.length, 5, "Should have 5 boundaries");
-  });
-
   it("getCellAtLine should return correct cell for first section", () => {
     const cell = CellDetector.getCellAtLine(testDocument, 0);
 
@@ -108,34 +93,6 @@ print(result)`;
     assert.strictEqual(cell, null, "Should return null for invalid line");
   });
 
-  it("findCellBoundaries should handle empty document", async () => {
-    const emptyDoc = await vscode.workspace.openTextDocument({
-      content: "",
-      language: "python",
-    });
-
-    const boundaries = CellDetector.findCellBoundaries(emptyDoc);
-
-    // Should have start and end only
-    assert.strictEqual(boundaries.length, 2, "Should have 2 boundaries");
-    assert.strictEqual(boundaries[0], 0, "First should be 0");
-    assert.strictEqual(boundaries[1], emptyDoc.lineCount, "Last should be line count");
-  });
-
-  it("findCellBoundaries should handle document with no markers", async () => {
-    const noMarkerDoc = await vscode.workspace.openTextDocument({
-      content: "print('hello')\nprint('world')",
-      language: "python",
-    });
-
-    const boundaries = CellDetector.findCellBoundaries(noMarkerDoc);
-
-    // Should have start and end only
-    assert.strictEqual(boundaries.length, 2, "Should have 2 boundaries");
-    assert.strictEqual(boundaries[0], 0, "First should be 0");
-    assert.strictEqual(boundaries[1], 2, "Last should be line count");
-  });
-
   it("getCellAtLine should trim cell code correctly", () => {
     const cell = CellDetector.getCellAtLine(testDocument, 0);
 
@@ -146,5 +103,115 @@ print(result)`;
       cell!.code.trim(),
       "Cell code should be trimmed"
     );
+  });
+
+  describe("getCodeInRange", () => {
+    it("should get code from entire document", () => {
+      const code = CellDetector.getCodeInRange(testDocument);
+
+      assert.ok(code !== null, "Code should not be null");
+      assert.ok(code!.includes("First cell"), "Should include first cell");
+      assert.ok(code!.includes("import numpy"), "Should include second cell");
+      assert.ok(!code!.includes("# %%"), "Should skip cell markers by default");
+    });
+
+    it("should get code from specific range", () => {
+      const code = CellDetector.getCodeInRange(testDocument, {
+        fromLine: 0,
+        toLine: 3,
+      });
+
+      assert.ok(code !== null, "Code should not be null");
+      assert.ok(code!.includes("First cell"), "Should include first cell");
+      assert.ok(!code!.includes("import numpy"), "Should not include later cells");
+    });
+
+    it("should include cell markers when skipCellMarkers is false", () => {
+      const code = CellDetector.getCodeInRange(testDocument, {
+        skipCellMarkers: false,
+      });
+
+      assert.ok(code !== null, "Code should not be null");
+      assert.ok(code!.includes("# %%"), "Should include cell markers");
+    });
+
+    it("should return null for empty range", () => {
+      const code = CellDetector.getCodeInRange(testDocument, {
+        fromLine: 0,
+        toLine: 0,
+      });
+
+      assert.strictEqual(code, null, "Should return null for empty range");
+    });
+  });
+
+  describe("getCodeAtLine", () => {
+    it("should get cell at line when both fromTop and toEnd are false", () => {
+      const code = CellDetector.getCodeAtLine(testDocument, 0, false, false);
+
+      assert.ok(code !== null, "Code should not be null");
+      assert.ok(code!.includes("First cell"), "Should get first cell");
+      assert.ok(!code!.includes("import numpy"), "Should not include other cells");
+    });
+
+    it("should get all code above when fromTop is true", () => {
+      // Find the third cell marker line
+      let thirdCellLine = -1;
+      for (let i = 0; i < testDocument.lineCount; i++) {
+        if (testDocument.lineAt(i).text.includes("# %% Third")) {
+          thirdCellLine = i;
+          break;
+        }
+      }
+
+      assert.ok(thirdCellLine > 0, "Should find third cell marker");
+
+      const code = CellDetector.getCodeAtLine(
+        testDocument,
+        thirdCellLine,
+        true,
+        false
+      );
+
+      assert.ok(code !== null, "Code should not be null");
+      assert.ok(code!.includes("First cell"), "Should include first cell");
+      assert.ok(code!.includes("import numpy"), "Should include second cell");
+      assert.ok(!code!.includes("def test()"), "Should not include third cell");
+    });
+
+    it("should get all code below when toEnd is true", () => {
+      // Find the second cell marker line
+      let secondCellLine = -1;
+      for (let i = 0; i < testDocument.lineCount; i++) {
+        if (testDocument.lineAt(i).text.includes("# %% Second")) {
+          secondCellLine = i;
+          break;
+        }
+      }
+
+      assert.ok(secondCellLine > 0, "Should find second cell marker");
+
+      const code = CellDetector.getCodeAtLine(
+        testDocument,
+        secondCellLine + 1,
+        false,
+        true
+      );
+
+      assert.ok(code !== null, "Code should not be null");
+      assert.ok(code!.includes("import numpy"), "Should include second cell");
+      assert.ok(code!.includes("def test()"), "Should include third cell");
+      assert.ok(!code!.includes("First cell"), "Should not include first cell");
+    });
+
+    it("should get all code when both fromTop and toEnd are true", () => {
+      const code = CellDetector.getCodeAtLine(testDocument, 0, true, true);
+
+      assert.ok(code !== null, "Code should not be null");
+      assert.ok(code!.includes("First cell"), "Should include first cell");
+      assert.ok(code!.includes("import numpy"), "Should include second cell");
+      assert.ok(code!.includes("def test()"), "Should include third cell");
+      assert.ok(!code!.includes("# %%"), "Should skip cell markers");
+    });
   });
 });

@@ -18,32 +18,13 @@ export class CellDetector {
   /**
    * Helper to move cursor to a specific line and reveal it
    */
-  private static moveCursorToLine(
-    editor: vscode.TextEditor,
-    lineNumber: number
-  ): void {
+  static moveCursorToLine(lineNumber: number): void {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) return;
+
     const newPosition = new vscode.Position(lineNumber, 0);
     editor.selection = new vscode.Selection(newPosition, newPosition);
     editor.revealRange(new vscode.Range(newPosition, newPosition));
-  }
-
-  /**
-   * Find all cell boundaries in the document
-   * Returns array of line numbers where cells start/end
-   * Note: Internal operations use local search for efficiency
-   */
-  static findCellBoundaries(document: vscode.TextDocument): number[] {
-    const boundaries: number[] = [0]; // Start with beginning of file
-
-    for (let i = 0; i < document.lineCount; i++) {
-      const line = document.lineAt(i);
-      if (line.text.trim().startsWith("# %%")) {
-        boundaries.push(i);
-      }
-    }
-
-    boundaries.push(document.lineCount); // Add end of file
-    return boundaries;
   }
 
   /**
@@ -115,14 +96,6 @@ export class CellDetector {
   }
 
   /**
-   * Get the cell at the current cursor position
-   */
-  static getCurrentCell(editor: vscode.TextEditor): Cell | null {
-    const cursorLine = editor.selection.active.line;
-    return this.getCellAtLine(editor.document, cursorLine);
-  }
-
-  /**
    * Get the current line text
    */
   static getCurrentLine(editor: vscode.TextEditor): string {
@@ -149,7 +122,7 @@ export class CellDetector {
   static moveCursorToNextLine(editor: vscode.TextEditor): void {
     const currentLine = editor.selection.active.line;
     const nextLine = Math.min(currentLine + 1, editor.document.lineCount - 1);
-    this.moveCursorToLine(editor, nextLine);
+    this.moveCursorToLine(nextLine);
   }
 
   /**
@@ -164,7 +137,88 @@ export class CellDetector {
       endPosition.line + 1,
       editor.document.lineCount - 1
     );
-    this.moveCursorToLine(editor, nextLine);
+    this.moveCursorToLine(nextLine);
+  }
+
+  /**
+   * Get code in a range of lines
+   * @param document The document to extract code from
+   * @param options.fromLine Starting line (inclusive, default: 0)
+   * @param options.toLine Ending line (exclusive, default: document.lineCount)
+   * @param options.skipCellMarkers Whether to skip "# %%" markers (default: true)
+   * @returns The code string, or null if no code found
+   */
+  static getCodeInRange(
+    document: vscode.TextDocument,
+    options: {
+      fromLine?: number;
+      toLine?: number;
+      skipCellMarkers?: boolean;
+    } = {}
+  ): string | null {
+    const fromLine = options.fromLine ?? 0;
+    const toLine = options.toLine ?? document.lineCount;
+    const skipCellMarkers = options.skipCellMarkers ?? true;
+
+    const lines: string[] = [];
+
+    for (let i = fromLine; i < toLine; i++) {
+      const lineText = document.lineAt(i).text;
+      // Skip cell markers if requested
+      if (skipCellMarkers && lineText.trim().startsWith("# %%")) {
+        continue;
+      }
+      lines.push(lineText);
+    }
+
+    const code = lines.join("\n").trim();
+    return code || null;
+  }
+
+  /**
+   * Get code at a specific line with range options
+   * @param document The document to extract code from
+   * @param lineNumber The reference line number
+   * @param fromTop If true, start from line 0
+   * @param toEnd If true, go to end of document
+   * @returns The code string, or null if no code found
+   *
+   * Behavior:
+   * - fromTop=false, toEnd=false: Get cell at lineNumber
+   * - fromTop=true,  toEnd=false: Get all code from 0 to lineNumber (exclusive)
+   * - fromTop=false, toEnd=true:  Get all code from lineNumber to end
+   * - fromTop=true,  toEnd=true:  Get all code in file
+   */
+  static getCodeAtLine(
+    document: vscode.TextDocument,
+    lineNumber: number,
+    fromTop: boolean = false,
+    toEnd: boolean = false
+  ): string | null {
+    if (fromTop && toEnd) {
+      // Run all: entire file
+      return this.getCodeInRange(document, { skipCellMarkers: true });
+    }
+
+    if (fromTop) {
+      // Run all above: from 0 to lineNumber (exclusive)
+      return this.getCodeInRange(document, {
+        toLine: lineNumber,
+        skipCellMarkers: true,
+      });
+    }
+
+    if (toEnd) {
+      // Run all below: from lineNumber to end
+      return this.getCodeInRange(document, {
+        fromLine: lineNumber,
+        skipCellMarkers: true,
+      });
+    }
+
+    // Run cell: just the cell at lineNumber
+    const cell = this.getCellAtLine(document, lineNumber);
+    return cell?.code ?? null;
   }
 
   /**
@@ -180,7 +234,7 @@ export class CellDetector {
       if (line.text.trim().startsWith("# %%")) {
         // Found next cell marker, move to line after it
         const targetLine = Math.min(i + 1, document.lineCount - 1);
-        this.moveCursorToLine(editor, targetLine);
+        this.moveCursorToLine(targetLine);
         return;
       }
     }

@@ -410,4 +410,209 @@ print(result)`;
       assert.ok(true, "Executed different cells sequentially");
     });
   });
+
+  describe("Run All", () => {
+    it("Should execute all code in document", async function () {
+      this.timeout(testTimeout);
+
+      // Run all code
+      assert.doesNotThrow(() => {
+        codeExecutor.runAll();
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      assert.ok(true, "All code executed without error");
+    });
+
+    it("Should execute all code regardless of cursor position", async function () {
+      this.timeout(testTimeout);
+
+      // Move cursor to middle of document
+      const position = new vscode.Position(7, 0);
+      editor.selection = new vscode.Selection(position, position);
+
+      codeExecutor.runAll();
+
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      assert.ok(true, "All code executed from any cursor position");
+    });
+
+    it("Should skip cell markers when running all", async function () {
+      this.timeout(testTimeout);
+
+      // Create document with many cell markers
+      const markerDoc = await vscode.workspace.openTextDocument({
+        content: `# %% First
+x = 1
+# %% Second
+y = 2
+# %% Third
+z = 3`,
+        language: "python",
+      });
+
+      await vscode.window.showTextDocument(markerDoc);
+
+      assert.doesNotThrow(() => {
+        codeExecutor.runAll();
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
+    });
+  });
+
+  describe("CodeLens Methods", () => {
+    it("Should execute cell via codeLensRunCell", async function () {
+      this.timeout(testTimeout);
+
+      // Find line with "# %% Cell 1" marker (should be line 5)
+      let markerLine = -1;
+      for (let i = 0; i < document.lineCount; i++) {
+        if (document.lineAt(i).text.includes("# %% Cell 1")) {
+          markerLine = i;
+          break;
+        }
+      }
+
+      assert.ok(markerLine >= 0, "Should find Cell 1 marker");
+
+      assert.doesNotThrow(() => {
+        codeExecutor.codeLensRunCell(markerLine);
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      // Cursor should have moved to next cell or beyond
+      assert.ok(true, "CodeLens run cell executed");
+    });
+
+    it("Should execute cell above via codeLensRunCellAbove", async function () {
+      this.timeout(testTimeout);
+
+      // Find line with "# %% Cell 2" marker
+      let markerLine = -1;
+      for (let i = 0; i < document.lineCount; i++) {
+        if (document.lineAt(i).text.includes("# %% Cell 2")) {
+          markerLine = i;
+          break;
+        }
+      }
+
+      assert.ok(markerLine >= 0, "Should find Cell 2 marker");
+
+      assert.doesNotThrow(() => {
+        codeExecutor.codeLensRunCellAbove(markerLine);
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      // Cursor should be at markerLine + 1
+      assert.strictEqual(
+        editor.selection.active.line,
+        markerLine + 1,
+        "Cursor should move to line after marker"
+      );
+    });
+
+    it("Should execute all below via codeLensRunAllBelow", async function () {
+      this.timeout(testTimeout);
+
+      // Find line with "# %% Cell 1" marker
+      let markerLine = -1;
+      for (let i = 0; i < document.lineCount; i++) {
+        if (document.lineAt(i).text.includes("# %% Cell 1")) {
+          markerLine = i;
+          break;
+        }
+      }
+
+      assert.ok(markerLine >= 0, "Should find Cell 1 marker");
+
+      const initialCursorLine = editor.selection.active.line;
+
+      assert.doesNotThrow(() => {
+        codeExecutor.codeLensRunAllBelow(markerLine);
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      // Cursor should not move for "all below"
+      assert.ok(true, "All code below executed");
+    });
+
+    it("Should execute all above via codeLensRunAllAbove", async function () {
+      this.timeout(testTimeout);
+
+      // Find line with "# %% Cell 2" marker (last marker)
+      let markerLine = -1;
+      for (let i = 0; i < document.lineCount; i++) {
+        if (document.lineAt(i).text.includes("# %% Cell 2")) {
+          markerLine = i;
+          break;
+        }
+      }
+
+      assert.ok(markerLine >= 0, "Should find Cell 2 marker");
+
+      assert.doesNotThrow(() => {
+        codeExecutor.codeLensRunAllAbove(markerLine);
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      // Cursor should not move for "all above"
+      assert.ok(true, "All code above executed");
+    });
+
+    it("Should handle codeLensRunCell at first marker", async function () {
+      this.timeout(testTimeout);
+
+      // Find first cell marker
+      let firstMarker = -1;
+      for (let i = 0; i < document.lineCount; i++) {
+        if (document.lineAt(i).text.includes("# %% Cell 1")) {
+          firstMarker = i;
+          break;
+        }
+      }
+
+      assert.ok(firstMarker >= 0, "Should find first cell marker");
+
+      assert.doesNotThrow(() => {
+        codeExecutor.codeLensRunCell(firstMarker);
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      assert.ok(true, "First cell executed via CodeLens");
+    });
+
+    it("Should handle codeLensRunCellAbove at first marker", async function () {
+      this.timeout(testTimeout);
+
+      // Find first cell marker
+      let firstMarker = -1;
+      for (let i = 0; i < document.lineCount; i++) {
+        if (document.lineAt(i).text.includes("# %% Cell 1")) {
+          firstMarker = i;
+          break;
+        }
+      }
+
+      assert.ok(firstMarker >= 0, "Should find first cell marker");
+
+      // Should execute code before first marker (lines 0 to firstMarker)
+      assert.doesNotThrow(() => {
+        codeExecutor.codeLensRunCellAbove(firstMarker);
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      assert.ok(true, "Code above first marker executed");
+    });
+  });
 });

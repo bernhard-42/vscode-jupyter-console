@@ -177,10 +177,57 @@ export function registerCommands(
     })
   );
 
+  // CodeLens: Run Cell - run this cell and advance to next
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "jupyterConsole.codeLensRunCell",
+      (markerLine: number) => {
+        ctx.codeExecutor.codeLensRunCell(markerLine);
+      }
+    )
+  );
+
+  // CodeLens: Run Cell Above - run cell above and move cursor to this cell
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "jupyterConsole.codeLensRunCellAbove",
+      (markerLine: number) => {
+        ctx.codeExecutor.codeLensRunCellAbove(markerLine);
+      }
+    )
+  );
+
+  // CodeLens: Run All Below - run all code from marker to end
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "jupyterConsole.codeLensRunAllBelow",
+      (markerLine: number) => {
+        ctx.codeExecutor.codeLensRunAllBelow(markerLine);
+      }
+    )
+  );
+
+  // CodeLens: Run All Above - run all code from start to marker
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "jupyterConsole.codeLensRunAllAbove",
+      (markerLine: number) => {
+        ctx.codeExecutor.codeLensRunAllAbove(markerLine);
+      }
+    )
+  );
+
   // Run cell and advance command
   context.subscriptions.push(
     vscode.commands.registerCommand("jupyterConsole.runCellAndAdvance", () => {
       ctx.codeExecutor.runCellAndAdvance();
+    })
+  );
+
+  // Run all command
+  context.subscriptions.push(
+    vscode.commands.registerCommand("jupyterConsole.runAll", () => {
+      ctx.codeExecutor.runAll();
     })
   );
 }
