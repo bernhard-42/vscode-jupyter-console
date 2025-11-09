@@ -427,18 +427,25 @@ for i in range(100):
     it("Should verify iopub monitor receives messages", async function () {
       this.timeout(testTimeout);
 
+      // Clear any accumulated messages from previous tests
+      iopubMonitor.clearMessages();
+
+      // Wait a moment to ensure clean state
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
       const initialCount = iopubMonitor.getMessages().length;
 
-      // Execute code
+      // Execute code - even in silent mode, status messages are sent
       kernelClient.executeCode("x = 42").catch(() => {});
 
+      // Wait for messages to arrive
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
       const finalCount = iopubMonitor.getMessages().length;
 
       assert.ok(
         finalCount > initialCount,
-        "Iopub monitor should receive new messages"
+        `Iopub monitor should receive new messages (was ${initialCount}, now ${finalCount})`
       );
     });
   });
