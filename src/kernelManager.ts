@@ -153,13 +153,21 @@ export class KernelManager {
       const kernelManagerScript = path.join(__dirname, "kernel_manager.py");
 
       Logger.log(
-        `Starting kernel with command: ${this.pythonPath} "${kernelManagerScript}"`
+        `Starting kernel with command: ${this.pythonPath} -u "${kernelManagerScript}"`
       );
 
-      this.kernelProcess = cp.spawn(this.pythonPath, [kernelManagerScript], {
-        env: { ...process.env },
-        shell: false,
-      });
+      this.kernelProcess = cp.spawn(
+        this.pythonPath,
+        ["-u", kernelManagerScript], // -u flag: unbuffered binary stdout and stderr
+        {
+          env: {
+            ...process.env,
+            PYTHONUNBUFFERED: "1", // Belt and suspenders: also set env var
+          },
+          shell: false,
+          stdio: ["pipe", "pipe", "pipe"], // Explicitly pipe stdin, stdout, stderr
+        }
+      );
 
       // Log stderr for debugging
       this.kernelProcess.stderr?.on("data", (data) => {
@@ -171,6 +179,7 @@ export class KernelManager {
         }
       });
 
+      // Log stdout (connection file, ACKs, etc.)
       this.kernelProcess.stdout?.on("data", (data) => {
         Logger.log(`Kernel stdout: ${data.toString()}`);
       });
@@ -325,21 +334,26 @@ export class KernelManager {
   }
 
   /**
-   * Interrupt the kernel (send SIGINT)
+   * Interrupt the kernel
+   * Sends INTERRUPT command to kernel_manager.py which calls km.interrupt_kernel()
+   * This is the "Jupyter way" and works cross-platform including Windows
    */
-  interruptKernel(): void {
-    if (!this.kernelProcess) {
+  async interruptKernel(): Promise<void> {
+    if (!this.kernelProcess || !this.kernelProcess.stdin) {
       vscode.window.showWarningMessage("No kernel is running");
       return;
     }
 
-    if (process.platform === "win32") {
-      // Windows doesn't support SIGINT, need to use different approach
-      vscode.window.showWarningMessage(
-        "Interrupt not fully supported on Windows"
-      );
-    } else {
-      this.kernelProcess.kill("SIGINT");
+    try {
+      // Send INTERRUPT command to Python wrapper via stdin
+      // The wrapper will call KernelManager.interrupt_kernel() which handles
+      // Windows event mechanism and Unix signals appropriately
+      this.kernelProcess.stdin.write("INTERRUPT\n");
+      Logger.log("Sent INTERRUPT command to kernel manager");
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      Logger.error(`Failed to send interrupt command: ${errorMsg}`);
+      vscode.window.showErrorMessage(`Failed to interrupt kernel: ${errorMsg}`);
     }
   }
 

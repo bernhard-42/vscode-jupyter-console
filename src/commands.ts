@@ -126,14 +126,10 @@ export function registerCommands(
       "jupyterConsole.interruptKernel",
       async () => {
         try {
-          if (ctx.kernelClient && ctx.kernelClient.isKernelConnected()) {
-            // Use proper Jupyter protocol interrupt via control channel
-            await ctx.kernelClient.interrupt();
-            Logger.log("Kernel interrupted via control channel");
-          } else {
-            // Fallback to process signal (less reliable)
-            ctx.kernelManager.interruptKernel();
-          }
+          // KernelManager sends INTERRUPT command to Python wrapper via stdin
+          // The wrapper calls km.interrupt_kernel() - the "Jupyter way" (cross-platform)
+          await ctx.kernelManager.interruptKernel();
+
           // Return to running state after interrupt
           ctx.statusBarManager.setState(KernelState.Running);
         } catch (error) {

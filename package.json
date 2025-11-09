@@ -216,7 +216,7 @@
   "scripts": {
     "vscode:prepublish": "yarn compile",
     "compile": "tsc -p ./ && yarn copy-python",
-    "copy-python": "cp src/iopub_viewer.py out/iopub_viewer.py && cp src/kernel_manager.py out/kernel_manager.py",
+    "copy-python": "node -e \"require('fs').copyFileSync('src/iopub_viewer.py', 'out/iopub_viewer.py'); require('fs').copyFileSync('src/kernel_manager.py', 'out/kernel_manager.py');\"",
     "watch": "tsc -watch -p ./",
     "pretest": "yarn compile && yarn lint",
     "test": "node ./out/test/runTest.js",
