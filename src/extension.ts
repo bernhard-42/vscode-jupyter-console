@@ -16,6 +16,7 @@ import { Logger } from "./logger";
 import { registerCommands } from "./commands";
 import {
   getPythonPath,
+  getPythonEnvName,
   registerPythonInterpreterListener,
 } from "./pythonIntegration";
 import { CellCodeLensProvider } from "./codeLensProvider";
@@ -98,6 +99,8 @@ export async function activate(context: vscode.ExtensionContext) {
     Logger.log("Detecting Python environment...");
     const pythonPath = await getPythonPath();
     Logger.log(`Python path detected: ${pythonPath}`);
+    const PythonEnvName = await getPythonEnvName();
+    Logger.log(`Python env name: ${PythonEnvName}`);
     await statusBarManager.updatePythonEnv();
     Logger.log("✓ Python environment set in status bar");
 
