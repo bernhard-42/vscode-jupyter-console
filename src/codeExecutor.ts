@@ -220,7 +220,7 @@ export class CodeExecutor {
    */
   codeLensRunCellAbove(markerLine: number): void {
     this.executeAndAdvance(ExecutionType.Cell, markerLine > 0 ? markerLine - 1 : 0, false);
-    CellDetector.moveCursorToLine(markerLine + 1);
+    // CellDetector.moveCursorToLine(markerLine + 1);
   }
 
   /**
