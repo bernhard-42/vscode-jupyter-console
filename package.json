@@ -99,7 +99,7 @@
       },
       {
         "command": "jupyterConsole.startConsole",
-        "title": "Jupyter Console: Start Console Terminals",
+        "title": "Jupyter Console: Start Console Terminal",
         "icon": "$(terminal)"
       },
       {
@@ -160,36 +160,36 @@
         {
           "command": "jupyterConsole.restartKernel",
           "group": "1_kernel@3"
-        },
-        {
-          "command": "jupyterConsole.interruptKernel",
-          "group": "1_kernel@4"
-        },
-        {
-          "command": "jupyterConsole.startConsole",
-          "group": "2_console@1"
         }
       ],
       "jupyterConsole.runMenu": [
         {
+          "command": "jupyterConsole.startConsole",
+          "group": "1_console@1"
+        },
+        {
           "command": "jupyterConsole.runCellAndAdvance",
-          "group": "1_cell@1"
+          "group": "2_cell@1"
         },
         {
           "command": "jupyterConsole.runCell",
-          "group": "1_cell@2"
+          "group": "2_cell@2"
         },
         {
           "command": "jupyterConsole.runSelectionAndAdvance",
-          "group": "2_run@1"
+          "group": "3_run@1"
         },
         {
           "command": "jupyterConsole.runSelection",
-          "group": "2_run@2"
+          "group": "3_run@2"
         },
         {
           "command": "jupyterConsole.runAll",
-          "group": "3_all@1"
+          "group": "4_all@1"
+        },
+        {
+          "command": "jupyterConsole.interruptKernel",
+          "group": "5_interrupt@1"
         }
       ]
     },
