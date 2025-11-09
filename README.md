@@ -12,6 +12,7 @@ A VS Code extension that integrates Jupyter kernels with console interface for i
    ```bash
    pip install jupyter jupyter-console
    ```
+   Note: The extension detects when `jupyter-console` is missing and allows to isntall it on the fly.
 
 ### Install the Extension
 
@@ -40,15 +41,15 @@ The extension adds a status bar item on the right side showing the kernel state
 
 **Status Bar States:**
 
-| State        | Icon         | Status Bar                                                          | Meaning            | Click Action  |
-| ------------ | ------------ | ------------------------------------------------------------------- | ------------------ | ------------- |
-| **Stopped**  | ⊘            | ![Status bar showing kernel stopped](images/status-bar-stopped.png) | No kernel running  | Starts kernel |
-| **Starting** | ⟳ (animated) | ![Status bar showing kernel busy](images/status-bar-busy.png)       | Kernel starting up | No action     |
-| **Running**  | ✓            | ![Status bar showing kernel running](images/status-bar-running.png) | Kernel ready       | No action     |
-| **Busy**     | ⟳ (animated) | ![Status bar showing kernel busy](images/status-bar-busy.png)       | Executing code     | No action     |
+| State        | Icon         | Status Bar                                                          | Meaning            | Click Action     |
+| ------------ | ------------ | ------------------------------------------------------------------- | ------------------ | ---------------- |
+| **Stopped**  | ⊘            | ![Status bar showing kernel stopped](images/status-bar-stopped.png) | No kernel running  | Start kernel     |
+| **Starting** | ⟳ (animated) | ![Status bar showing kernel busy](images/status-bar-busy.png)       | Kernel starting up | n/a              |
+| **Running**  | ✓            | ![Status bar showing kernel running](images/status-bar-running.png) | Kernel ready       | n/a              |
+| **Busy**     | ⟳ (animated) | ![Status bar showing kernel busy](images/status-bar-busy.png)       | Executing code     | Interrupt kernel |
 
 **Environment Display:**
-The status bar shows your Python environment name (e.g., `venv`, `conda_env`, or `Python`), automatically extracted from your selected Python interpreter. In the above table the python environment is `work`.
+The status bar shows your Python environment name (e.g., `venv`, `conda_env`, or `Python`) in brackets, automatically extracted from your selected Python interpreter. In the above table the python environment is `work`.
 
 ### Editor Actions Menu
 
@@ -56,19 +57,27 @@ When editing Python files, a _Jupyter Kernel_ and a _Run in Console_ menu appear
 
 - _Jupyter Kernel_ menu
 
-  The _Jupyter Kernel_ menu provides quick access to: `Start Kernel`, `Stop Kernel`, `Restart Kernel`, `Interrupt Kernel`, and `Start Console Terminals`
-
   ![Editor toolbar with Jupyter Kernel menu](images/editor-kernel-menu.png)
+
+  The _Jupyter Kernel_ menu provides quick access to: `Start Kernel`, `Stop Kernel`, `Restart Kernel`. It uses the Python environment selected in the Microsoft Python extension.
 
 - "_Run in Console_ menu
 
-  The _Run in Console_ menu provides quick access to: `Run Cell and Advance`, `Run Cell`, `Run Selection and Advance`, and `Run Selection`
-
   ![Editor toolbar with Jupyter Kernel menu](images/editor-run-menu.png)
+
+  The _Run in Console_ menu provides quick access to:
+
+  - `Start Console Terminal` Start the Jupyter Console for the existing kernel (automatically started when kernel gets started)
+  - `Run Cell and Advance` Run the code between two `# %%` markers that surround the cursor position and move cursor to beginning of next cell
+  - `Run Cell` Run the code between two `# %%` markers that surround the cursor position and keep cursor where it was
+  - `Run Selection/Line and Advance` Run the selected code or the line of the cursor when no code is selected and move cursor to beginning of next cell
+  - `Run Selection/Line` Run the selected code or the line of the cursor when no code is selected
+  - `Run All` Run complete code
+  - `Interrupt Kernel` Interrupt code execution in kernel
 
 ### Jupyter Console
 
-The extension creates one decated VS Code Terminal for the _Jupyter Console_. It is a traditional `jupyter-console` interface for interactive debugging and exploration. This console is connected to the Jupyter kernel and can see and change all variables. 
+The extension creates one decated VS Code Terminal for the _Jupyter Console_. It is a traditional `jupyter-console` interface for interactive debugging and exploration. This console is connected to the Jupyter kernel and can see and change all variables.
 
 ![Jupyter Console terminal for interactive Python session](images/jupyter-console-1.png)
 
@@ -78,7 +87,7 @@ The **Jupyter Console** terminal provides:
 - Full IPython features (magic commands, shell access, tab completion)
 - Useful for debugging and interactive exploration
 
-To start: Click the status bar or use the editor menu and select "Start Console Terminal"
+To start: Click the status bar or use the editor menu and select "Start Console Terminals"
 
 Output from code executed from the editor (cells or selections) are separated by `Out[<filename>]` markers.
 
@@ -132,69 +141,22 @@ These are the same as in the _Run in Console_ action menu, with their default ke
 | `Jupyter Console: Run Cell`                       | `Ctrl + Shift + Enter` | Execute current cell (between `# %%` markers)           |
 | `Jupyter Console: Run Selection/Line and Advance` | `Alt  + Enter`         | Execute selection/line, move cursor after               |
 | `Jupyter Console: Run Selection/Line`             | `Alt  + Shift + Enter` | Execute selected code (or current line if no selection) |
+| `Jupyter Console: Run All`                        |                        | Execute complete code                                   |
+| `Jupyter Console: Interrupt Kernel`               | `Ctrl+Alt+I`           | Interrupt Kernel                                        |
 
 **Additional Shortcut:**
 
-- `Cmd+Alt+I` (Mac) / `Ctrl+Alt+I` (Win/Linux) - Interrupt Kernel
+#### CodeLens action buttons
 
-### Standard Workflows
+![CodeLens activities](images/codelens.png)
 
-#### Workflow 1: Quick Python Script Execution
+For Python files with `# %%` cell markers the following cell activities are available:
 
-Write code, press Shift+Enter to execute each line and advance, view output in Jupyter Output terminal
-
-1. Open a Python file
-2. Click status bar → "Start Kernel"
-3. Write your code
-4. Press `Alt+Enter` to execute each line and advance (if no code is selected, _Run Selection_ uses the current line)
-5. View output in **Jupyter Output** terminal
-
-#### Workflow 2: Cell-Based Development
-
-Organize code into cells with `# %%` markers, execute cells independently with `Cmd+Alt+C`, results appear in sequence
-
-1. Define cells using `# %%` markers:
-
-   ```python
-   # %% Import libraries
-   import numpy as np
-   import matplotlib.pyplot as plt
-
-   # %% Generate data
-   x = np.linspace(0, 10, 100)
-   y = np.sin(x)
-
-   # %% Plot
-   plt.plot(x, y)
-   plt.show()
-   ```
-
-2. Press `Cmd+Alt+C` / `Ctrl+Alt+C` to execute current cell
-3. Press `Cmd+Alt+Shift+C` / `Ctrl+Alt+Shift+C` to execute and jump to next cell
-
-#### Workflow 3: Interactive Debugging
-
-Execute code from editor, then use Jupyter Console for interactive inspection of variables and testing
-
-1. Execute code from your editor
-2. Open the terminals panel (if not already open)
-3. Switch to **Jupyter Console** terminal
-4. Inspect variables interactively:
-   ```python
-   In [1]: print(x)  # Check variable values
-   In [2]: dir()     # List all variables
-   In [3]: %whos     # IPython magic to show all variables
-   ```
-5. Test code snippets before adding to your script
-
-#### Workflow 4: Long-Running Code
-
-Start execution, see status bar turn yellow (busy), press Cmd+Alt+I to interrupt if needed
-
-1. Execute long-running code
-2. Status bar shows **Busy** state (⟳ yellow)
-3. To interrupt: Press `Cmd+Alt+I` / `Ctrl+Alt+I` or click status bar → "Interrupt Kernel"
-4. See interrupt message in Jupyter Output
+- `▶ Cell` Run the cell below the cell marker and move cursor th next cell
+- `▶ Cell Above` Run the cell above the cell marker and keep cursor
+- `▶ All Below` Run all cells below the cell marker and keep cursor
+- `▶ All Above` Run all cells above the cell marker and keep cursor
+- `⏹ Interrupt` Interrupt any code execution
 
 ### Configuration
 
@@ -224,404 +186,13 @@ The extension provides configurable timeouts for different operations. Access vi
 
 _Increase these values on slower machines if you experience timeout errors._
 
-### Troubleshooting
-
-#### Kernel fails to start
-
-1. **Check Python interpreter is selected:**
-
-   - Command Palette → `Python: Select Interpreter`
-
-2. **Verify Jupyter is installed:**
-
-   ```bash
-   python -m jupyter --version
-   ```
-
-   If not installed:
-
-   ```bash
-   pip install jupyter jupyter-console
-   ```
-
-3. **Check Output panel:**
-   - View → Output → Select "Jupyter Console" from dropdown
-
-#### Code execution hangs
-
-- Press `Cmd+Alt+I` / `Ctrl+Alt+I` to interrupt
-- If unresponsive, restart kernel via status bar
-
-#### Extension not detecting Python environment
-
-- Ensure Python extension is installed and active
-- Reload VS Code window: Command Palette → `Developer: Reload Window`
-
-## Architecture
-
-### Overview
-
-The extension uses the **Jupyter messaging protocol** directly via ZMQ for fast, reliable communication with the kernel.
-
-### Component Relationships
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                        VS Code Editor                       │
-│  (Python file with code to execute)                         │
-└───────────────────────┬─────────────────────────────────────┘
-                        │
-                        │ CodeExecutor extracts code
-                        ▼
-┌─────────────────────────────────────────────────────────────┐
-│                   KernelClient (ZMQ)                        │
-│  • Connects via shell channel (execute_request)             │
-│  • Subscribes to iopub channel (status, results, errors)    │
-└────────┬───────────────────────────────────┬────────────────┘
-         │                                   │
-         │ Shell channel                     │ IOPub channel
-         │ (DEALER socket)                   │ (SUB socket)
-         ▼                                   ▼
-┌─────────────────────────────────────────────────────────────┐
-│                   Jupyter Kernel Process                    │
-│  (Started by KernelManager via subprocess)                  │
-│  • Executes Python code                                     │
-│  • Generates outputs, results, errors                       │
-└────────┬─────────────────────────────┬────────────────┬─────┘
-         │                             │                │
-         │ Connection file             │                │
-         │ (JSON with ports/keys)      │                │
-         ▼                             ▼                ▼
-┌──────────────────┐      ┌──────────────────┐   ┌──────────────┐
-│  iopub_viewer.py │      │ Jupyter Console  │   │ KernelClient │
-│    (Python)      │      │                  │   │  (IOPub Sub) │
-│    OPTIONAL!     │      │                  │   │              │
-│                  │      │                  │   │              │
-│ Subscribes to    │      │ Interactive      │   │ Receives:    │
-│ iopub channel    │      │ IPython shell    │   │ - status     │
-│                  │      │                  │   │ - results    │
-│ Displays in:     │      │ Displayed in:    │   │ - errors     │
-│ Jupyter Output   │      │ Jupyter Console  │   │              │
-│ Terminal         │      │ Terminal         │   │ Updates UI   │
-└──────────────────┘      └──────────────────┘   └──────────────┘
-```
-
-### Key Components
-
-#### 1. KernelManager (`src/kernelManager.ts`)
-
-**Purpose:** Manages the Jupyter kernel process lifecycle
-
-**Responsibilities:**
-
-- Spawns kernel subprocess: `python -m jupyter kernel --kernel=python3`
-- Monitors stderr for connection file path
-- Provides connection info to clients
-- Handles kernel start/stop/restart/interrupt operations
-
-**Key Methods:**
-
-- `startKernel()` - Spawns kernel process and waits for connection file
-- `getConnectionFile()` - Returns path to kernel's connection JSON
-- `stopKernel()` - Terminates kernel process
-- `interruptKernel()` - Sends SIGINT signal
-
-#### 2. KernelClient (`src/kernelClient.ts`)
-
-**Purpose:** Direct communication with kernel via Jupyter protocol (ZMQ)
-
-**Responsibilities:**
-
-- Establishes ZMQ socket connections (DEALER for shell, SUB for iopub)
-- Implements Jupyter wire protocol with HMAC message signing
-- Sends `execute_request` messages
-- Receives and parses: `execute_reply`, `stream`, `display_data`, `error`, `status` messages
-- Provides status callbacks for UI updates
-
-**Protocol Details:**
-
-- Uses ZMQ DEALER socket for shell channel (bidirectional RPC)
-- Uses ZMQ SUB socket for iopub channel (broadcast messages)
-- Implements HMAC-SHA256 message authentication
-- Follows Jupyter Messaging Protocol v5.3
-
-**Message Flow Example:**
-
-```
-1. Send execute_request on shell channel
-   {
-     msg_type: "execute_request",
-     content: { code: "print('hello')", ... }
-   }
-
-2. Receive status: busy on iopub
-3. Receive stream: stdout on iopub
-   { name: "stdout", text: "hello\n" }
-4. Receive status: idle on iopub
-5. Receive execute_reply on shell channel
-   { status: "ok", execution_count: 1 }
-```
-
-#### 3. ConsoleManager (`src/consoleManager.ts`)
-
-**Purpose:** Manages terminal creation for output viewer and jupyter-console
-
-**Responsibilities:**
-
-- Starts jupyter-console in a terminal (Jupyter Console)
-- Optionally starts iopub_viewer.py in a hidden terminal (Jupyter Output)
-
-**Terminal Lifecycle:**
-
-- Console terminal: Started on demand via "Start Console Terminals" command
-- Viewer terminal: Auto-started with kernel (optional)
-- Both closed when kernel stops or extension deactivates
-
-#### 4. CodeExecutor (`src/codeExecutor.ts`)
-
-**Purpose:** Executes code from editor via kernel client
-
-**Responsibilities:**
-
-- Extracts code from editor (line, selection, or cell)
-- Routes code to `KernelClient.executeCode()`
-- Handles cursor movement (advance options)
-- Auto-starts kernel if not running (with user confirmation)
-
-**Execution Logic:**
-
-```typescript
-enum ExecutionType { Line, Selection, Cell }
-
-executeAndAdvance(type, advance) {
-  - Extract code based on type
-  - Execute via kernelClient
-  - Optionally advance cursor
-}
-```
-
-**Smart Fallback:**
-
-- If no kernel running → Prompts user to start kernel
-- If terminals closed → Auto-starts them
-
-#### 5. StatusBarManager (`src/statusBarManager.ts`)
-
-**Purpose:** Visual UI for kernel state in status bar
-
-**Responsibilities:**
-
-- Shows kernel state with appropriate icon and color
-- Displays Python environment name
-- Provides click action (start kernel or open menu)
-- Subscribes to kernel status messages from KernelClient
-- Maintains visibility across editor events
-
-**State Transitions:**
-
-```
-Stopped → (start) → Starting → (connected) → Running
-                                                ↓
-                                            (execute)
-                                                ↓
-                                              Busy
-                                                ↓
-                                            (complete)
-                                                ↓
-                                             Running
-```
-
-#### 6. PythonIntegration (`src/pythonIntegration.ts`)
-
-**Purpose:** Integrates with VS Code Python extension
-
-**Responsibilities:**
-
-- Detects active Python interpreter path
-- Monitors interpreter changes
-- Auto-stops kernel when interpreter changes
-- Updates status bar with new environment name
-
-**Python Extension API Usage:**
-
-```typescript
-const pythonExtension = vscode.extensions.getExtension("ms-python.python");
-const pythonApi = pythonExtension.exports;
-const activeEnv = pythonApi.environments.getActiveEnvironmentPath();
-
-// Listen for changes
-pythonApi.environments.onDidChangeActiveEnvironmentPath((e) => {
-  // Stop kernel, update UI
-});
-```
-
-#### 7. Optional: iopub_viewer.py (Python Script)
-
-**Purpose:** Displays kernel output in terminal with formatting
-
-**Responsibilities:**
-
-- Connects to kernel's iopub channel via ZMQ SUB socket
-- Subscribes to all message types
-- Formats and displays:
-  - Input code with green `In [n]` labels (truncated if long)
-  - Standard output and stderr
-  - Execution results with red `Out[n]` labels
-  - Errors with full tracebacks in red
-  - Success (✓) and error (✗) indicators
-- Uses ANSI color codes for terminal formatting
-
-**Color Functions:**
-
-```python
-def green(text): return f"\033[32m{text}\033[0m"
-def red(text): return f"\033[31m{text}\033[0m"
-def dim(text): return f"\033[2m{text}\033[0m"
-```
-
-### Jupyter Wire Protocol
-
-The extension implements the Jupyter messaging specification for kernel communication.
-
-**Message Structure (ZMQ multipart):**
-
-```
-[
-  b"<IDS|MSG>",     // Delimiter
-  signature,        // HMAC-SHA256 signature
-  header,           // JSON: msg_id, msg_type, username, session
-  parent_header,    // JSON: parent message (empty for new messages)
-  metadata,         // JSON: metadata dict
-  content           // JSON: message-specific content
-]
-```
-
-**Connection File (JSON):**
-
-```json
-{
-  "ip": "127.0.0.1",
-  "transport": "tcp",
-  "shell_port": 12345,
-  "iopub_port": 12346,
-  "control_port": 12347,
-  "hb_port": 12348,
-  "stdin_port": 12349,
-  "key": "abc123...",
-  "signature_scheme": "hmac-sha256"
-}
-```
-
-**Used Channels:**
-
-- **Shell** (DEALER): Request-reply for execution
-- **IOPub** (SUB): Broadcast for output, status, results
-- **Control** (DEALER): Interrupt and shutdown (used for interrupt)
-
-### Performance & Design Benefits
-
-**Direct Protocol Advantages:**
-
-- **Fast:** Sub-millisecond local latency vs. terminal text simulation
-- **Reliable:** Proper message framing, no text parsing issues
-- **Rich:** Supports all Jupyter message types (plots, widgets, etc.)
-- **Concurrent:** Kernel handles message queuing
-
-**Two-Terminal Design:**
-
-- **Jupyter Output:** Read-only, clean display of execution flow
-- **Jupyter Console:** Interactive IPython shell for debugging
-- Both connect to same kernel → shared namespace
-
-**Security:**
-
-- Local-only communication (127.0.0.1)
-- HMAC authentication with kernel's secret key
-- Connection file in system temp directory
-
-### Extension Lifecycle
-
-```
-1. Activation (onStartupFinished)
-   ↓
-2. Initialize managers (kernel, console, executor, status bar)
-   ↓
-3. Detect Python interpreter
-   ↓
-4. Show status bar (stopped state)
-   ↓
-5. Register commands and listeners
-   ↓
-6. Wait for user action...
-
-[User starts kernel]
-   ↓
-7. Spawn kernel process
-   ↓
-8. Read connection file from kernel stderr
-   ↓
-9. Connect KernelClient via ZMQ
-   ↓
-10. Start iopub_viewer.py terminal
-   ↓
-11. Status bar → Running
-   ↓
-12. Ready for code execution
-
-[User changes Python interpreter]
-   ↓
-13. Stop kernel
-   ↓
-14. Update kernel manager with new path
-   ↓
-15. Update status bar
-   ↓
-16. User must start kernel again
-
-[Deactivation]
-   ↓
-17. Disconnect kernel client
-   ↓
-18. Stop kernel process
-   ↓
-19. Close terminals
-```
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit issues or pull requests at:
-https://github.com/bernhard-42/vscode-jupyter-console
-
-### Building from Source
-
-**For local development:**
-
-```bash
-yarn install
-yarn compile
-```
-
-**For packaging:**
-
-Due to native dependencies (zeromq), platform-specific packages must be built:
-
-```bash
-# Build for your current platform
-yarn package:mac-arm      # macOS Apple Silicon
-yarn package:mac-intel    # macOS Intel
-yarn package:linux        # Linux
-yarn package:win32        # Windows
-```
-
-**For releases:**
-
-Use GitHub Actions to automatically build for all platforms:
-
-1. Push a tag: `git tag v1.0.0 && git push origin v1.0.0`
-2. GitHub Actions will build VSIX files for all platforms
-3. Download artifacts from the Actions run or GitHub release
-
-See `.github/workflows/build-release.yml` for details.
+## Other topics:
+
+- [Supported workflows](docs/workflows.md)
+- [The two-terminal option](docs/two-terminal-option.md)
+- [Trouble-shooting](docs/trouble-shooting.md)
+- [Extension Architecture](docs/architecture.md)
+- [Contributing](docs/contributing.md)
 
 ## License
 
