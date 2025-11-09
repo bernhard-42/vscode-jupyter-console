@@ -18,3 +18,12 @@ node_modules/**
 yarn.lock
 package-lock.json
 .claude
+test-env/**
+.ipynb_checkpoints/**
+**/.ipynb_checkpoints/**
+*.ipynb
+Untitled.ipynb
+vibe-coding/**
+OPTION.md
+out/test/**
+.github/**
