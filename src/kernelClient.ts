@@ -43,6 +43,7 @@ export class KernelClient {
   private connectionInfo: ConnectionInfo | null = null;
   private shellSocket: zmq.Dealer | null = null;
   private iopubSocket: zmq.Subscriber | null = null;
+  private stdinSocket: zmq.Dealer | null = null;
   private controlSocket: zmq.Dealer | null = null;
   private sessionId: string;
   private isConnected: boolean = false;
@@ -50,6 +51,8 @@ export class KernelClient {
   private completionCallbacks: Map<string, () => void> = new Map();
   private iopubListenerRunning: boolean = false;
   private iopubListenerPromise: Promise<void> | null = null;
+  private stdinListenerRunning: boolean = false;
+  private stdinListenerPromise: Promise<void> | null = null;
   private statusCallback: ((state: "busy" | "idle") => void) | null = null;
 
   constructor() {
@@ -133,16 +136,27 @@ export class KernelClient {
       // Create ZMQ sockets
       this.shellSocket = new zmq.Dealer();
       this.iopubSocket = new zmq.Subscriber();
+      this.stdinSocket = new zmq.Dealer();
       this.controlSocket = new zmq.Dealer();
+
+      // IMPORTANT: stdin socket must have the same routing ID as shell socket
+      // This is required by Jupyter protocol for stdin to work
+      const socketIdentity = `client-${this.sessionId}`;
+      this.shellSocket.routingId = socketIdentity;
+      this.stdinSocket.routingId = socketIdentity;
+
+      Logger.log(`Socket identity set to: ${socketIdentity}`);
 
       // Connect sockets
       const shellAddr = `${this.connectionInfo.transport}://${this.connectionInfo.ip}:${this.connectionInfo.shell_port}`;
       const iopubAddr = `${this.connectionInfo.transport}://${this.connectionInfo.ip}:${this.connectionInfo.iopub_port}`;
+      const stdinAddr = `${this.connectionInfo.transport}://${this.connectionInfo.ip}:${this.connectionInfo.stdin_port}`;
       const controlAddr = `${this.connectionInfo.transport}://${this.connectionInfo.ip}:${this.connectionInfo.control_port}`;
 
       try {
         await this.shellSocket.connect(shellAddr);
         await this.iopubSocket.connect(iopubAddr);
+        await this.stdinSocket.connect(stdinAddr);
         await this.controlSocket.connect(controlAddr);
       } catch (error) {
         throw new Error(`Failed to connect to kernel sockets: ${error}`);
@@ -153,8 +167,9 @@ export class KernelClient {
 
       this.isConnected = true;
 
-      // Start persistent iopub listener
+      // Start persistent listeners
       this.startIopubListener();
+      this.startStdinListener();
 
       Logger.log(`Connected to kernel: ${shellAddr}`);
     } catch (error) {
@@ -174,6 +189,14 @@ export class KernelClient {
           // Ignore cleanup errors
         }
         this.iopubSocket = null;
+      }
+      if (this.stdinSocket) {
+        try {
+          this.stdinSocket.close();
+        } catch {
+          // Ignore cleanup errors
+        }
+        this.stdinSocket = null;
       }
       if (this.controlSocket) {
         try {
@@ -276,6 +299,108 @@ export class KernelClient {
       } finally {
         this.iopubListenerRunning = false;
         this.iopubListenerPromise = null;
+      }
+    })();
+  }
+
+  /**
+   * Start persistent listener for stdin messages (input requests)
+   */
+  private startStdinListener(): void {
+    if (this.stdinListenerRunning || !this.stdinSocket) {
+      return;
+    }
+
+    this.stdinListenerRunning = true;
+    Logger.log("Starting stdin listener...");
+
+    const handleMessage = async (msgParts: Buffer[]) => {
+      try {
+        Logger.log(`Stdin: Received ${msgParts.length} message parts`);
+
+        // Log first few parts to understand structure
+        for (let i = 0; i < Math.min(msgParts.length, 3); i++) {
+          Logger.log(`  Part ${i}: ${msgParts[i].toString().substring(0, 50)}`);
+        }
+
+        // Find delimiter
+        const delimiterIdx = msgParts.findIndex(
+          (part: Buffer) => part.toString() === "<IDS|MSG>"
+        );
+
+        if (delimiterIdx === -1) {
+          Logger.log("Stdin: No delimiter found, skipping message");
+          return;
+        }
+
+        Logger.log(`Stdin: Delimiter found at index ${delimiterIdx}`);
+
+        const header = JSON.parse(msgParts[delimiterIdx + 2].toString());
+        const parentHeader = JSON.parse(msgParts[delimiterIdx + 3].toString());
+        const metadata = JSON.parse(msgParts[delimiterIdx + 4].toString());
+        const content = JSON.parse(msgParts[delimiterIdx + 5].toString());
+
+        const msgType = header.msg_type;
+        Logger.log(`Stdin: Received message type: ${msgType}`);
+
+        if (msgType === "input_request") {
+          Logger.log("Received input_request from kernel");
+
+          // Get the prompt from the request
+          const prompt = content.prompt || "Input:";
+          const password = content.password || false;
+
+          // Show temporary status message to guide user
+          const statusDisposable = vscode.window.setStatusBarMessage(
+            "$(keyboard) Input requested - enter value in dialog",
+            10000 // Show for 10 seconds or until input provided
+          );
+
+          // Show VS Code input box
+          const userInput = await vscode.window.showInputBox({
+            prompt: prompt,
+            password: password,
+            ignoreFocusOut: true,
+            placeHolder: "Enter value...",
+          });
+
+          // Clear status message
+          statusDisposable.dispose();
+
+          Logger.log(`User input received: ${userInput !== undefined ? "(provided)" : "(cancelled)"}`);
+
+          // Send input_reply back to kernel
+          const reply = this.createMessage(
+            "input_reply",
+            {
+              value: userInput || "",
+            },
+            header
+          );
+
+          await this.sendMessage(this.stdinSocket!, reply);
+          Logger.log("Sent input_reply to kernel");
+        }
+      } catch (error: any) {
+        Logger.error("Error processing stdin message:", error);
+      }
+    };
+
+    this.stdinListenerPromise = (async () => {
+      if (!this.stdinSocket) return;
+
+      try {
+        Logger.log("Stdin listener: entering message loop");
+        for await (const msgParts of this.stdinSocket) {
+          await handleMessage(msgParts);
+        }
+        Logger.log("Stdin listener: exited message loop");
+      } catch (error) {
+        Logger.error("Stdin listener error:", error);
+      } finally {
+        this.stdinListenerRunning = false;
+        this.stdinListenerPromise = null;
+        Logger.log("Stdin listener stopped");
       }
     })();
   }
@@ -420,6 +545,7 @@ export class KernelClient {
   async disconnect(): Promise<void> {
     this.isConnected = false;
     this.iopubListenerRunning = false;
+    this.stdinListenerRunning = false;
 
     // Clear all callbacks
     this.outputCallbacks.clear();
@@ -436,14 +562,23 @@ export class KernelClient {
       this.iopubSocket = null;
     }
 
+    if (this.stdinSocket) {
+      await this.stdinSocket.close();
+      this.stdinSocket = null;
+    }
+
     if (this.controlSocket) {
       await this.controlSocket.close();
       this.controlSocket = null;
     }
 
-    // Wait for iopub listener to finish processing
+    // Wait for listeners to finish processing
     if (this.iopubListenerPromise) {
       await this.iopubListenerPromise;
+    }
+
+    if (this.stdinListenerPromise) {
+      await this.stdinListenerPromise;
     }
 
     Logger.log("Disconnected from kernel");
