@@ -350,22 +350,51 @@ export class KernelClient {
           const prompt = content.prompt || "Input:";
           const password = content.password || false;
 
-          // Show temporary status message to guide user
-          const statusDisposable = vscode.window.setStatusBarMessage(
-            "$(keyboard) Input requested - enter value in dialog",
-            10000 // Show for 10 seconds or until input provided
-          );
+          let userInput: string | undefined;
 
-          // Show VS Code input box
-          const userInput = await vscode.window.showInputBox({
-            prompt: prompt,
-            password: password,
-            ignoreFocusOut: true,
-            placeHolder: "Enter value...",
-          });
+          // Check if prompt matches "Select ... from [item1, item2, ...]" pattern
+          const selectPattern = /^Select\s+.*\s+from\s+\[(.+)\]\s*$/i;
+          const match = prompt.match(selectPattern);
 
-          // Clear status message
-          statusDisposable.dispose();
+          if (match && !password) {
+            // Extract and parse the list items
+            const listString = match[1];
+            const items = listString.split(",").map((item: string) => item.trim());
+
+            Logger.log(`Detected select prompt with ${items.length} items`);
+
+            // Show temporary status message for selection
+            const statusDisposable = vscode.window.setStatusBarMessage(
+              "$(list-selection) Select an option from the dropdown",
+              10000
+            );
+
+            // Show VS Code quick pick (dropdown selector)
+            const selected = await vscode.window.showQuickPick(items, {
+              placeHolder: prompt,
+              ignoreFocusOut: true,
+              canPickMany: false,
+            });
+
+            statusDisposable.dispose();
+            userInput = selected;
+          } else {
+            // Show temporary status message for text input
+            const statusDisposable = vscode.window.setStatusBarMessage(
+              "$(keyboard) Input requested - enter value in dialog",
+              10000
+            );
+
+            // Show VS Code input box (standard text input)
+            userInput = await vscode.window.showInputBox({
+              prompt: prompt,
+              password: password,
+              ignoreFocusOut: true,
+              placeHolder: "Enter value...",
+            });
+
+            statusDisposable.dispose();
+          }
 
           Logger.log(`User input received: ${userInput !== undefined ? "(provided)" : "(cancelled)"}`);
 
