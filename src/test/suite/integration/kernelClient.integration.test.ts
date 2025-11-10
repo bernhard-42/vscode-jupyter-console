@@ -32,26 +32,28 @@ class IopubMonitor {
     await this.socket.connect(iopubAddr);
     this.socket.subscribe(); // Subscribe to all messages
 
+    // Give ZMQ time to establish connection
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
     this.listening = true;
-    this.startListening();
+    await this.startListening(); // Wait for listener to be ready
   }
 
   private async startListening(): Promise<void> {
     if (!this.socket) return;
 
-    // Listen in background
+    // Start listening in background
     (async () => {
       try {
-        for await (const [msg] of this.socket!) {
+        // Iopub messages are multipart: [identities, delimiter, signature, header, parent_header, metadata, content]
+        for await (const msgParts of this.socket!) {
           if (!this.listening) break;
 
-          // Parse the message
-          const parts = msg.toString().split('\n');
           try {
-            // Messages are multipart - we just collect them
+            // Just track that we received a message (don't need to parse it)
             this.messages.push({
               timestamp: Date.now(),
-              raw: msg.toString()
+              parts: msgParts.length,
             });
           } catch (e) {
             // Ignore parsing errors
@@ -61,6 +63,9 @@ class IopubMonitor {
         // Socket closed
       }
     })();
+
+    // Give the listener a moment to enter the for-await loop
+    await new Promise((resolve) => setTimeout(resolve, 200));
   }
 
   getMessages(): any[] {
@@ -173,7 +178,7 @@ describe("KernelClient Integration Tests", () => {
 
       // Send code (don't wait for completion)
       kernelClient.executeCode(code).catch(() => {
-        // Ignore timeouts
+        // Ignore errors
       });
 
       // Wait a bit for messages to arrive
@@ -199,9 +204,11 @@ describe("KernelClient Integration Tests", () => {
 
       await new Promise((resolve) => setTimeout(resolve, 4000));
 
-      // Accept if we got messages (timing-sensitive in test environment)
-      const hasMessages = iopubMonitor.hasMessages();
-      assert.ok(true, hasMessages ? "Received messages" : "No messages (acceptable in test env)");
+      // Should receive messages for arithmetic operations
+      assert.ok(
+        iopubMonitor.hasMessages(),
+        "Should receive messages for arithmetic operations"
+      );
     });
 
     it("Should receive messages for variable assignment", async function () {
@@ -215,9 +222,11 @@ describe("KernelClient Integration Tests", () => {
 
       await new Promise((resolve) => setTimeout(resolve, 4000));
 
-      // Accept if we got messages (timing-sensitive)
-      const hasMessages = iopubMonitor.hasMessages();
-      assert.ok(true, hasMessages ? "Received messages" : "No messages (acceptable in test env)");
+      // Should receive messages for variable assignment
+      assert.ok(
+        iopubMonitor.hasMessages(),
+        "Should receive messages for variable assignment"
+      );
     });
 
     it("Should receive messages for multi-line code", async function () {
@@ -235,9 +244,11 @@ print(x + y)
 
       await new Promise((resolve) => setTimeout(resolve, 4000));
 
-      // Accept if we got messages (timing-sensitive)
-      const hasMessages = iopubMonitor.hasMessages();
-      assert.ok(true, hasMessages ? "Received messages" : "No messages (acceptable in test env)");
+      // Should receive messages for multi-line code
+      assert.ok(
+        iopubMonitor.hasMessages(),
+        "Should receive messages for multi-line code"
+      );
     });
 
     it("Should maintain kernel state across executions", async function () {
@@ -248,26 +259,33 @@ print(x + y)
       kernelClient.executeCode("counter = 0").catch(() => {});
       await new Promise((resolve) => setTimeout(resolve, 3000));
 
-      const messages1 = iopubMonitor.getMessages().length;
-      // Accept test regardless of messages (timing-sensitive)
-      assert.ok(true, messages1 > 0 ? `First execution: ${messages1} messages` : "Timing-sensitive test");
+      // Should receive messages from first execution
+      assert.ok(
+        iopubMonitor.hasMessages(),
+        "Should receive messages from first execution"
+      );
 
       // Second execution
       iopubMonitor.clearMessages();
       kernelClient.executeCode("counter += 1").catch(() => {});
       await new Promise((resolve) => setTimeout(resolve, 3000));
 
-      const messages2 = iopubMonitor.getMessages().length;
-      assert.ok(true, messages2 > 0 ? `Second execution: ${messages2} messages` : "Timing-sensitive test");
+      // Should receive messages from second execution
+      assert.ok(
+        iopubMonitor.hasMessages(),
+        "Should receive messages from second execution"
+      );
 
       // Third execution
       iopubMonitor.clearMessages();
       kernelClient.executeCode("print(counter)").catch(() => {});
       await new Promise((resolve) => setTimeout(resolve, 3000));
 
-      // Accept if messages received
-      const hasMessages = iopubMonitor.hasMessages();
-      assert.ok(true, hasMessages ? "State maintained (messages received)" : "State test completed (timing-sensitive)");
+      // Should receive messages showing state was maintained
+      assert.ok(
+        iopubMonitor.hasMessages(),
+        "Should receive messages from third execution (state maintained)"
+      );
     });
 
     it("Should handle code with imports", async function () {
@@ -281,9 +299,11 @@ print(x + y)
 
       await new Promise((resolve) => setTimeout(resolve, 4000));
 
-      // Accept regardless of message reception (timing-sensitive)
-      const hasMessages = iopubMonitor.hasMessages();
-      assert.ok(true, hasMessages ? "Import produced messages" : "Import test completed (timing-sensitive)");
+      // Should receive messages for code with imports
+      assert.ok(
+        iopubMonitor.hasMessages(),
+        "Should receive messages for code with imports"
+      );
     });
 
     it("Should handle function definition", async function () {
@@ -297,9 +317,11 @@ print(x + y)
 
       await new Promise((resolve) => setTimeout(resolve, 4000));
 
-      // Accept regardless of message reception (timing-sensitive)
-      const hasMessages = iopubMonitor.hasMessages();
-      assert.ok(true, hasMessages ? "Function definition produced messages" : "Function test completed (timing-sensitive)");
+      // Should receive messages for function definition
+      assert.ok(
+        iopubMonitor.hasMessages(),
+        "Should receive messages for function definition"
+      );
     });
   });
 
@@ -439,11 +461,11 @@ for i in range(100):
 
       const initialCount = iopubMonitor.getMessages().length;
 
-      // Execute code - even in silent mode, status messages are sent
-      kernelClient.executeCode("x = 42").catch(() => {});
+      // Execute code - print() sends stream messages even in silent mode
+      kernelClient.executeCode("print('test')").catch(() => {});
 
       // Wait for messages to arrive
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      await new Promise((resolve) => setTimeout(resolve, 3000));
 
       const finalCount = iopubMonitor.getMessages().length;
 
