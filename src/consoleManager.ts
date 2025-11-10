@@ -121,6 +121,7 @@ export class ConsoleManager {
   /**
    * Start terminals: iopub viewer (shown) + jupyter console (background)
    * Can be called to reconnect to an existing kernel
+   * Returns a promise that resolves after terminals are fully started
    */
   async startConsole(): Promise<void> {
     try {
@@ -174,7 +175,7 @@ export class ConsoleManager {
             );
             const command = `"${pythonPath}" "${viewerScript}" "${connectionFile}" ${truncateLines}`;
             this.viewerTerminal.sendText(command, true);
-            this.viewerTerminal.show();
+            this.viewerTerminal.show(true); // preserveFocus = true
           }
         }, getViewerTerminalStartDelay());
       }
@@ -200,6 +201,14 @@ export class ConsoleManager {
           this.consoleTerminal.sendText(command, true);
         }
       }, getConsoleTerminalStartDelay());
+
+      // Wait for terminals to be fully started before resolving
+      // Use the longer of the two delays plus buffer for sendText to complete
+      const maxDelay = Math.max(
+        enableOutputViewer ? getViewerTerminalStartDelay() : 0,
+        getConsoleTerminalStartDelay()
+      );
+      await new Promise((resolve) => setTimeout(resolve, maxDelay + 200));
     } catch (error) {
       // Clean up terminals on error
       if (this.viewerTerminal) {

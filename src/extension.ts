@@ -51,8 +51,19 @@ async function connectKernelClient(): Promise<void> {
 
   Logger.log("Kernel client connected");
 
+  // Save active editor to restore focus after starting console
+  const activeEditor = vscode.window.activeTextEditor;
+
   // Automatically start terminals (iopub viewer + jupyter console)
   await consoleManager.startConsole();
+
+  // Restore focus to editor if it was active
+  if (activeEditor) {
+    await vscode.window.showTextDocument(activeEditor.document, {
+      viewColumn: activeEditor.viewColumn,
+      preserveFocus: false,
+    });
+  }
 }
 
 /**
