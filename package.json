@@ -6,6 +6,7 @@
   "publisher": "bernhard-42",
   "license": "MIT",
   "repository": "https://github.com/bernhard-42/vscode-jupyter-console",
+  "icon": "images/logo.png",
   "engines": {
     "vscode": "^1.85.0"
   },
