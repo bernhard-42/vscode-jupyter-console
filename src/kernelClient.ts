@@ -12,7 +12,6 @@ import * as crypto from "crypto";
 import { v4 as uuidv4 } from "uuid";
 import * as fs from "fs";
 import { Logger } from "./logger";
-import { getCodeExecutionTimeout } from "./constants";
 
 interface ConnectionInfo {
   ip: string;
@@ -391,16 +390,6 @@ export class KernelClient {
       Logger.log(`Registering callbacks for msg_id: ${msg.header.msg_id}`);
       Logger.log("Sending execute request to kernel");
       this.sendMessage(this.shellSocket!, msg).catch(reject);
-
-      // Timeout after CODE_EXECUTION_TIMEOUT
-      setTimeout(() => {
-        if (this.completionCallbacks.has(msg.header.msg_id)) {
-          Logger.log("Execution timeout - no completion received");
-          this.outputCallbacks.delete(msg.header.msg_id);
-          this.completionCallbacks.delete(msg.header.msg_id);
-          reject(new Error("Execution timeout"));
-        }
-      }, getCodeExecutionTimeout());
     });
   }
 

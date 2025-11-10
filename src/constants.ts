@@ -35,8 +35,3 @@ export function getKernelOperationWait(): number {
 export function getKernelConnectionTimeout(): number {
   return getConfig().get<number>("advanced.kernelConnectionTimeout", 10000);
 }
-
-/** Timeout for code execution to complete */
-export function getCodeExecutionTimeout(): number {
-  return getConfig().get<number>("advanced.codeExecutionTimeout", 30000);
-}

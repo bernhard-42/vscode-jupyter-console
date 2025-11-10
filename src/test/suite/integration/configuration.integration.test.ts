@@ -12,7 +12,6 @@ import {
   getConsoleTerminalStartDelay,
   getKernelOperationWait,
   getKernelConnectionTimeout,
-  getCodeExecutionTimeout,
 } from "../../../constants";
 
 describe("Configuration Integration Tests", () => {
@@ -28,7 +27,6 @@ describe("Configuration Integration Tests", () => {
     await config.update("advanced.consoleTerminalStartDelay", undefined, true);
     await config.update("advanced.kernelOperationWait", undefined, true);
     await config.update("advanced.kernelConnectionTimeout", undefined, true);
-    await config.update("advanced.codeExecutionTimeout", undefined, true);
     await config.update("enableOutputViewer", undefined, true);
     await config.update("truncateInputLinesMax", undefined, true);
   });
@@ -51,11 +49,6 @@ describe("Configuration Integration Tests", () => {
   it("Should read default kernelConnectionTimeout", () => {
     const timeout = getKernelConnectionTimeout();
     assert.strictEqual(timeout, 10000, "Default should be 10000ms");
-  });
-
-  it("Should read default codeExecutionTimeout", () => {
-    const timeout = getCodeExecutionTimeout();
-    assert.strictEqual(timeout, 30000, "Default should be 30000ms");
   });
 
   it("Should update and read custom viewerTerminalStartDelay", async () => {

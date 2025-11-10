@@ -12,7 +12,7 @@ import * as fs from "fs";
 import * as zmq from "zeromq";
 import { KernelClient } from "../../../kernelClient";
 import { KernelManager } from "../../../kernelManager";
-import { getKernelConnectionTimeout, getCodeExecutionTimeout } from "../../../constants";
+import { getKernelConnectionTimeout } from "../../../constants";
 
 /**
  * Helper class to monitor iopub messages directly
@@ -88,7 +88,7 @@ describe("KernelClient Integration Tests", () => {
   let kernelManager: KernelManager;
   let kernelClient: KernelClient;
   let iopubMonitor: IopubMonitor;
-  const testTimeout = getKernelConnectionTimeout() + getCodeExecutionTimeout() + 5000;
+  const testTimeout = getKernelConnectionTimeout() + 60000; // Connection timeout + 60s for test execution
 
   // Use the test-env Python
   const projectRoot = path.resolve(__dirname, "../../../../");

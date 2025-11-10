@@ -13,10 +13,7 @@ import { CodeExecutor } from "../../../codeExecutor";
 import { ConsoleManager } from "../../../consoleManager";
 import { KernelManager } from "../../../kernelManager";
 import { KernelClient } from "../../../kernelClient";
-import {
-  getKernelConnectionTimeout,
-  getCodeExecutionTimeout,
-} from "../../../constants";
+import { getKernelConnectionTimeout } from "../../../constants";
 
 describe("CodeExecutor Integration Tests", () => {
   let kernelManager: KernelManager;
@@ -26,8 +23,7 @@ describe("CodeExecutor Integration Tests", () => {
   let document: vscode.TextDocument;
   let editor: vscode.TextEditor;
 
-  const testTimeout =
-    getKernelConnectionTimeout() + getCodeExecutionTimeout() + 5000;
+  const testTimeout = getKernelConnectionTimeout() + 60000; // Connection timeout + 60s for test execution
 
   // Use the test-env Python
   const projectRoot = path.resolve(__dirname, "../../../../");

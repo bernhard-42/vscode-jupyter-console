@@ -66,13 +66,6 @@
           "description": "[Advanced] Timeout (in milliseconds) for kernel connection file to appear. Increase on slower machines.",
           "minimum": 1000,
           "order": 13
-        },
-        "jupyterConsole.advanced.codeExecutionTimeout": {
-          "type": "number",
-          "default": 30000,
-          "description": "[Advanced] Timeout (in milliseconds) for code execution to complete. Increase for long-running code.",
-          "minimum": 1000,
-          "order": 14
         }
       }
     },
