@@ -471,11 +471,11 @@ export class KernelManager {
     // Give the wrapper enough time to gracefully kill the kernel first
     const killTimeout = setTimeout(() => {
       if (processToKill && !processToKill.killed) {
-        // Kill the wrapper process itself (cross-platform)
-        // On Unix: SIGTERM, On Windows: TerminateProcess
+        // Kill the wrapper process itself
+        // Node.js handles platform differences: SIGTERM on Unix, TerminateProcess on Windows
         try {
           processToKill.kill("SIGTERM");
-          Logger.log("Killed kernel manager wrapper process with SIGTERM");
+          Logger.log("Killed kernel manager wrapper process");
         } catch (error) {
           Logger.error(`Failed to kill wrapper process: ${error}`);
         }
