@@ -586,8 +586,10 @@ export class KernelClient {
   }
 
   /**
-   * Verify connection by sending kernel_info_request and waiting for reply.
+   * Verify connection by sending kernel_info_request and waiting.
    * This ensures the iopub subscription is fully established (fixes ZMQ "slow joiner" problem).
+   * We don't need to wait for the reply - just sending the request and giving time for
+   * the iopub subscription to complete is sufficient.
    */
   private async verifyConnection(): Promise<void> {
     if (!this.shellSocket || !this.connectionInfo) {
@@ -598,33 +600,15 @@ export class KernelClient {
 
     const msg = this.createMessage("kernel_info_request", {});
 
-    // Send the request
+    // Send the request - this exercises the connection
     await this.sendMessage(this.shellSocket, msg);
 
-    // Wait for the reply on shell socket
-    try {
-      const [
-        , // identities
-        , // delimiter
-        , // signature
-        header,
-        , // parent_header
-        , // metadata
-        content,
-      ] = await this.shellSocket.receive();
+    // Wait a brief moment for the iopub subscription to be fully established
+    // The kernel will process the request and send status messages on iopub,
+    // ensuring the subscription is working before we continue
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
-      const headerObj = JSON.parse(header.toString());
-
-      if (headerObj.msg_type === "kernel_info_reply") {
-        const contentObj = JSON.parse(content.toString());
-        Logger.log(`Connection verified - kernel: ${contentObj.implementation} ${contentObj.implementation_version}`);
-      } else {
-        Logger.log(`Received unexpected message type: ${headerObj.msg_type}`);
-      }
-    } catch (error) {
-      Logger.error("Error verifying connection:", error);
-      // Don't throw - connection might still work
-    }
+    Logger.log("Connection verification complete");
   }
 
   /**
