@@ -474,8 +474,8 @@ export class KernelManager {
         // Kill the wrapper process itself (cross-platform)
         // On Unix: SIGTERM, On Windows: TerminateProcess
         try {
-          this.kernelProcess.kill("SIGTERM");
-          Logger.log("Killed kernel manager wrapper process");
+          processToKill.kill("SIGTERM");
+          Logger.log("Killed kernel manager wrapper process with SIGTERM");
         } catch (error) {
           Logger.error(`Failed to kill wrapper process: ${error}`);
         }
