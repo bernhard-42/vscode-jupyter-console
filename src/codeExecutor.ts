@@ -87,7 +87,7 @@ export class CodeExecutor {
       const filename = editor
         ? path.basename(editor.document.fileName)
         : "editor";
-      codeToExecute = `print("\\n\\033[31mOut[${filename}]:\\033[0m")\n${code}`;
+      codeToExecute = `print("\\n\\033[31mOut[${filename}]:\\n▶︎▶︎▶︎\\033[0m")\n${code}\nprint("\\033[32m◀︎◀︎◀︎\\033[0m")`;
     }
 
     try {
