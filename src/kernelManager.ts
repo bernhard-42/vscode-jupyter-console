@@ -408,7 +408,7 @@ export class KernelManager {
       );
       vscode.window
         .showErrorMessage(
-          "Kernel did not respond to interrupt (likely stuck in native code). Please restart the kernel.",
+          "Kernel did not respond to interrupt (likely stuck in native code). You can continue waiting or restart the kernel.",
           "Restart Kernel"
         )
         .then((choice) => {
