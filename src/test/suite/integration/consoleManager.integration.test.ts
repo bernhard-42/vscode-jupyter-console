@@ -38,7 +38,8 @@ describe("ConsoleManager Integration Tests", () => {
     consoleManager.closeTerminals();
     consoleManager.dispose();
     if (kernelManager.isRunning()) {
-      kernelManager.stopKernel();
+      await kernelManager.stopKernel();
+      // stopKernel() now waits for process to exit, no additional delay needed
     }
   });
 
@@ -59,7 +60,7 @@ describe("ConsoleManager Integration Tests", () => {
       this.timeout(testTimeout);
 
       // Stop the kernel first
-      kernelManager.stopKernel();
+      await kernelManager.stopKernel();
 
       // Create new console manager
       const newConsoleManager = new ConsoleManager(

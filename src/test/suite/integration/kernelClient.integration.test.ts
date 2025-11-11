@@ -126,7 +126,8 @@ describe("KernelClient Integration Tests", () => {
       await kernelClient.disconnect();
     }
     if (kernelManager.isRunning()) {
-      kernelManager.stopKernel();
+      await kernelManager.stopKernel();
+      // stopKernel() now waits for process to exit, no additional delay needed
     }
   });
 

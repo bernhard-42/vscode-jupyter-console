@@ -437,27 +437,40 @@ export class KernelManager {
    * Stop the kernel
    * Always uses force shutdown to ensure clean termination
    * Kills both the Python wrapper and the kernel process (cross-platform)
+   * Returns a promise that resolves when the process is confirmed dead
    */
-  stopKernel(): void {
+  async stopKernel(): Promise<void> {
     if (!this.kernelProcess) {
       vscode.window.showWarningMessage("No kernel is running");
       return;
     }
 
+    const processToKill = this.kernelProcess;
+    const pid = processToKill.pid;
+
     // Send SHUTDOWN command for clean shutdown
     // The Python wrapper will force-kill the kernel process at OS level
-    if (this.kernelProcess.stdin) {
+    if (processToKill.stdin) {
       try {
-        this.kernelProcess.stdin.write("SHUTDOWN\n");
+        processToKill.stdin.write("SHUTDOWN\n");
         Logger.log("Sent SHUTDOWN command to kernel manager");
       } catch (error) {
         Logger.error(`Failed to send shutdown command: ${error}`);
       }
     }
 
-    // Give the Python wrapper a moment to force-kill the kernel
-    setTimeout(() => {
-      if (this.kernelProcess) {
+    // Wait for process to exit, with timeout
+    const exitPromise = new Promise<void>((resolve) => {
+      processToKill.once("exit", () => {
+        Logger.log(`Kernel process ${pid} exited`);
+        resolve();
+      });
+    });
+
+    // Also schedule a force-kill after 2000ms if not exited yet
+    // Give the wrapper enough time to gracefully kill the kernel first
+    const killTimeout = setTimeout(() => {
+      if (processToKill && !processToKill.killed) {
         // Kill the wrapper process itself (cross-platform)
         // On Unix: SIGTERM, On Windows: TerminateProcess
         try {
@@ -467,7 +480,18 @@ export class KernelManager {
           Logger.error(`Failed to kill wrapper process: ${error}`);
         }
       }
-    }, 500);
+    }, 2000);
+
+    // Wait for exit or timeout after 5 seconds
+    const timeoutPromise = new Promise<void>((resolve) => {
+      setTimeout(() => {
+        Logger.log("Kernel stop timeout reached (5s), continuing anyway");
+        resolve();
+      }, 5000);
+    });
+
+    await Promise.race([exitPromise, timeoutPromise]);
+    clearTimeout(killTimeout);
 
     this.kernelProcess = null;
     this.connectionFile = null;
@@ -477,6 +501,8 @@ export class KernelManager {
       clearTimeout(this.interruptTimeoutHandle);
       this.interruptTimeoutHandle = null;
     }
+
+    Logger.log("stopKernel completed");
   }
 
   /**
@@ -484,7 +510,7 @@ export class KernelManager {
    * Always uses force shutdown to ensure clean termination
    */
   async restartKernel(): Promise<void> {
-    this.stopKernel();
+    await this.stopKernel(); // Now waits for process to actually exit
     await new Promise((resolve) =>
       setTimeout(resolve, getKernelOperationWait())
     ); // Wait for kernel to fully stop

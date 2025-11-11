@@ -28,7 +28,8 @@ describe("StatusBarManager Integration Tests", () => {
   afterEach(() => {
     statusBarManager.dispose();
     if (kernelManager.isRunning()) {
-      kernelManager.stopKernel();
+      await kernelManager.stopKernel();
+      // stopKernel() now waits for process to exit, no additional delay needed
     }
   });
 

@@ -133,7 +133,7 @@ export async function registerPythonInterpreterListener(
 
       // Stop kernel process
       if (wasRunning) {
-        kernelManager.stopKernel();
+        await kernelManager.stopKernel();
         Logger.log("✓ Kernel stopped");
       }
 

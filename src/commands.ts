@@ -89,7 +89,7 @@ export function registerCommands(
     vscode.commands.registerCommand("jupyterConsole.stopKernel", async () => {
       try {
         await ctx.cleanupKernelClient();
-        ctx.kernelManager.stopKernel();
+        await ctx.kernelManager.stopKernel();
         ctx.statusBarManager.setState(KernelState.Stopped);
       } catch (error) {
         vscode.window.showErrorMessage(`Failed to stop kernel: ${error}`);

@@ -196,7 +196,7 @@ export async function deactivate() {
   }
 
   if (kernelManager && kernelManager.isRunning()) {
-    kernelManager.stopKernel();
+    await kernelManager.stopKernel();
   }
 
   Logger.log("Deactivation complete");

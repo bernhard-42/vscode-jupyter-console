@@ -28,7 +28,8 @@ describe("KernelManager Integration Tests", () => {
   afterEach(() => {
     // Ensure kernel is stopped after each test
     if (kernelManager.isRunning()) {
-      kernelManager.stopKernel();
+      await kernelManager.stopKernel();
+      // stopKernel() now waits for process to exit, no additional delay needed
     }
   });
 
@@ -97,7 +98,7 @@ describe("KernelManager Integration Tests", () => {
         "Kernel should be running"
       );
 
-      kernelManager.stopKernel();
+      await kernelManager.stopKernel();
 
       assert.strictEqual(
         kernelManager.isRunning(),
@@ -115,7 +116,7 @@ describe("KernelManager Integration Tests", () => {
       assert.strictEqual(kernelManager.isRunning(), false);
 
       // Should not throw - just show warning
-      kernelManager.stopKernel();
+      await kernelManager.stopKernel();
 
       assert.strictEqual(kernelManager.isRunning(), false);
     });
@@ -202,7 +203,7 @@ describe("KernelManager Integration Tests", () => {
       assert.strictEqual(kernelManager.isRunning(), true);
 
       // Stop
-      kernelManager.stopKernel();
+      await kernelManager.stopKernel();
       assert.strictEqual(kernelManager.isRunning(), false);
 
       // Start again
