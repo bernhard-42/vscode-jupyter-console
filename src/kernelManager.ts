@@ -152,13 +152,17 @@ export class KernelManager {
       // This avoids kernelspec lookup and ensures we use the right kernel
       const kernelManagerScript = path.join(__dirname, "kernel_manager.py");
 
+      // Get the VS Code workspace directory to use as kernel working directory
+      const workspaceDir =
+        vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || process.cwd();
+
       Logger.log(
-        `Starting kernel with command: ${this.pythonPath} -u "${kernelManagerScript}"`
+        `Starting kernel with command: ${this.pythonPath} -u "${kernelManagerScript}" --cwd "${workspaceDir}"`
       );
 
       this.kernelProcess = cp.spawn(
         this.pythonPath,
-        ["-u", kernelManagerScript], // -u flag: unbuffered binary stdout and stderr
+        ["-u", kernelManagerScript, "--cwd", workspaceDir], // -u flag: unbuffered binary stdout and stderr
         {
           env: {
             ...process.env,

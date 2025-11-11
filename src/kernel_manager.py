@@ -15,6 +15,7 @@ Listens for commands on stdin:
 - SHUTDOWN: gracefully shuts down the kernel
 """
 
+import argparse
 import sys
 import threading
 import time
@@ -47,9 +48,19 @@ def command_listener(km):
 
 
 def main():
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description="Start and manage a Jupyter kernel")
+    parser.add_argument(
+        "--cwd",
+        type=str,
+        default=None,
+        help="Working directory for the kernel"
+    )
+    args = parser.parse_args()
+
     # Create and start kernel manager
     km = KernelManager()
-    km.start_kernel()
+    km.start_kernel(cwd=args.cwd)
 
     # Print connection file path to stdout (will be captured by VS Code extension)
     print(km.connection_file, flush=True)
