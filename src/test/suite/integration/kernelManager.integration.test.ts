@@ -25,7 +25,7 @@ describe("KernelManager Integration Tests", () => {
     kernelManager = new KernelManager(testPython);
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     // Ensure kernel is stopped after each test
     if (kernelManager.isRunning()) {
       await kernelManager.stopKernel();
@@ -112,7 +112,7 @@ describe("KernelManager Integration Tests", () => {
       );
     });
 
-    it("Should handle stopping when no kernel is running", () => {
+    it("Should handle stopping when no kernel is running", async () => {
       assert.strictEqual(kernelManager.isRunning(), false);
 
       // Should not throw - just show warning

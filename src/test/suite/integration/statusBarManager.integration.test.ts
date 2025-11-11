@@ -25,7 +25,7 @@ describe("StatusBarManager Integration Tests", () => {
     statusBarManager = new StatusBarManager(kernelManager);
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     statusBarManager.dispose();
     if (kernelManager.isRunning()) {
       await kernelManager.stopKernel();

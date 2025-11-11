@@ -33,7 +33,7 @@ describe("ConsoleManager Integration Tests", () => {
     await kernelManager.startKernel();
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     // Clean up
     consoleManager.closeTerminals();
     consoleManager.dispose();
