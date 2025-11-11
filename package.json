@@ -70,7 +70,7 @@
         },
         "jupyterConsole.advanced.interruptTimeout": {
           "type": "number",
-          "default": 1000,
+          "default": 3000,
           "description": "[Advanced] Timeout (in milliseconds) before force-killing an unresponsive kernel after interrupt. Useful for native code that doesn't respond to interrupts.",
           "minimum": 1000,
           "order": 14
