@@ -40,3 +40,8 @@ export function getKernelConnectionTimeout(): number {
 export function getInterruptTimeout(): number {
   return getConfig().get<number>("advanced.interruptTimeout", 1000);
 }
+
+/** Timeout (in seconds) for Jupyter Console to wait for kernel's is_complete response */
+export function getConsoleIsCompleteTimeout(): number {
+  return getConfig().get<number>("advanced.consoleIsCompleteTimeout", 3600);
+}

@@ -12,6 +12,7 @@ import { KernelManager } from "./kernelManager";
 import {
   getViewerTerminalStartDelay,
   getConsoleTerminalStartDelay,
+  getConsoleIsCompleteTimeout,
 } from "./constants";
 
 export class ConsoleManager {
@@ -197,7 +198,18 @@ export class ConsoleManager {
           const includeOtherOutput = !enableOutputViewer
             ? " --ZMQTerminalInteractiveShell.include_other_output=True"
             : "";
-          const command = `"${pythonPath}" -m jupyter console${includeOtherOutput} --existing "${connectionFile}"`;
+
+          // Increase is_complete timeout to prevent console from giving up on multi-line editing
+          // when kernel is busy. Default is 1 second, which is too short.
+          // With a longer timeout (default 3600s = 1 hour), the console waits for kernel to become idle
+          // before checking if code is complete, preserving multi-line prompt functionality.
+          // Note: If you press Enter in the console while kernel is busy longer than this timeout,
+          // the console will permanently switch to multi-line mode requiring 3 Enters.
+          // This timeout is configurable via jupyterConsole.advanced.consoleIsCompleteTimeout
+          const timeoutSeconds = getConsoleIsCompleteTimeout();
+          const isCompleteTimeout = ` --ZMQTerminalInteractiveShell.kernel_is_complete_timeout=${timeoutSeconds}`;
+
+          const command = `"${pythonPath}" -m jupyter console${includeOtherOutput}${isCompleteTimeout} --existing "${connectionFile}"`;
           this.consoleTerminal.sendText(command, true);
         }
       }, getConsoleTerminalStartDelay());

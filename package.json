@@ -74,6 +74,13 @@
           "description": "[Advanced] Timeout (in milliseconds) before force-killing an unresponsive kernel after interrupt. Useful for native code that doesn't respond to interrupts.",
           "minimum": 1000,
           "order": 14
+        },
+        "jupyterConsole.advanced.consoleIsCompleteTimeout": {
+          "type": "number",
+          "default": 3600,
+          "description": "[Advanced] Timeout (in seconds) for Jupyter Console to wait for kernel's is_complete response. If kernel is busy longer than this, multi-line editing may require multiple Enter presses. Increase for long-running computations.",
+          "minimum": 1,
+          "order": 15
         }
       }
     },

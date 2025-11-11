@@ -172,6 +172,10 @@ export class KernelClient {
       this.startStdinListener();
 
       Logger.log(`Connected to kernel: ${shellAddr}`);
+
+      // Verify connection is working and iopub subscription is fully established
+      // This solves the ZMQ "slow joiner" problem where early messages can be lost
+      await this.verifyConnection();
     } catch (error) {
       // Clean up sockets on error
       if (this.shellSocket) {
@@ -526,6 +530,13 @@ export class KernelClient {
       stop_on_error: false,
     });
 
+    // Set status to busy immediately before sending request
+    // This ensures UI is responsive even if kernel's status message is delayed
+    // (e.g., when native extensions hold the GIL)
+    if (this.statusCallback) {
+      this.statusCallback("busy");
+    }
+
     // Create a promise that resolves when execution completes
     return new Promise<void>((resolve, reject) => {
       // Register output callback if provided
@@ -559,6 +570,48 @@ export class KernelClient {
 
     Logger.log("Sending interrupt request to kernel");
     await this.sendMessage(this.controlSocket, msg);
+  }
+
+  /**
+   * Verify connection by sending kernel_info_request and waiting for reply.
+   * This ensures the iopub subscription is fully established (fixes ZMQ "slow joiner" problem).
+   */
+  private async verifyConnection(): Promise<void> {
+    if (!this.shellSocket || !this.connectionInfo) {
+      throw new Error("Not connected to kernel");
+    }
+
+    Logger.log("Verifying connection with kernel_info_request...");
+
+    const msg = this.createMessage("kernel_info_request", {});
+
+    // Send the request
+    await this.sendMessage(this.shellSocket, msg);
+
+    // Wait for the reply on shell socket
+    try {
+      const [
+        , // identities
+        , // delimiter
+        , // signature
+        header,
+        , // parent_header
+        , // metadata
+        content,
+      ] = await this.shellSocket.receive();
+
+      const headerObj = JSON.parse(header.toString());
+
+      if (headerObj.msg_type === "kernel_info_reply") {
+        const contentObj = JSON.parse(content.toString());
+        Logger.log(`Connection verified - kernel: ${contentObj.implementation} ${contentObj.implementation_version}`);
+      } else {
+        Logger.log(`Received unexpected message type: ${headerObj.msg_type}`);
+      }
+    } catch (error) {
+      Logger.error("Error verifying connection:", error);
+      // Don't throw - connection might still work
+    }
   }
 
   /**
