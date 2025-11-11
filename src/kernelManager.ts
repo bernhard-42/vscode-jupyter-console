@@ -467,30 +467,36 @@ export class KernelManager {
       });
     });
 
-    // Also schedule a force-kill after 2000ms if not exited yet
-    // Give the wrapper enough time to gracefully kill the kernel first
+    // Staged shutdown approach with two timeouts:
+    const SIGTERM_DELAY_MS = 2000;  // Time to wait before sending SIGTERM
+    const MAX_WAIT_MS = 5000;        // Maximum time to wait before giving up
+
+    // Schedule SIGTERM as a "nudge" if process doesn't exit quickly
     const killTimeout = setTimeout(() => {
       if (processToKill && !processToKill.killed) {
         // Kill the wrapper process itself
         // Node.js handles platform differences: SIGTERM on Unix, TerminateProcess on Windows
         try {
           processToKill.kill("SIGTERM");
-          Logger.log("Killed kernel manager wrapper process");
+          Logger.log("Sent SIGTERM to kernel manager wrapper process");
         } catch (error) {
           Logger.error(`Failed to kill wrapper process: ${error}`);
         }
       }
-    }, 2000);
+    }, SIGTERM_DELAY_MS);
 
-    // Wait for exit or timeout after 5 seconds
+    // Maximum wait timeout - give up if process still hasn't exited
     const timeoutPromise = new Promise<void>((resolve) => {
       setTimeout(() => {
-        Logger.log("Kernel stop timeout reached (5s), continuing anyway");
+        Logger.log(`Kernel stop timeout reached (${MAX_WAIT_MS}ms), continuing anyway`);
         resolve();
-      }, 5000);
+      }, MAX_WAIT_MS);
     });
 
+    // Wait for process to exit or timeout
     await Promise.race([exitPromise, timeoutPromise]);
+
+    // Clean up the SIGTERM timer if still pending
     clearTimeout(killTimeout);
 
     this.kernelProcess = null;
