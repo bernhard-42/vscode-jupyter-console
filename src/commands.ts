@@ -70,6 +70,7 @@ export function registerCommands(
         // Set up Python environment before starting
         await setupPythonEnvironment(ctx);
 
+        ctx.codeExecutor.resetCounter();
         ctx.statusBarManager.setState(KernelState.Starting);
 
         await ctx.kernelManager.startKernel();
@@ -107,6 +108,7 @@ export function registerCommands(
           // Set up Python environment before restarting
           await setupPythonEnvironment(ctx);
 
+          ctx.codeExecutor.resetCounter();
           ctx.statusBarManager.setState(KernelState.Starting);
           await ctx.kernelManager.restartKernel();
           await ctx.connectKernelClient();

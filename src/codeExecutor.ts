@@ -24,6 +24,7 @@ enum ExecutionType {
 export class CodeExecutor {
   private consoleManager: ConsoleManager;
   private kernelClient: KernelClient | null = null;
+  private counter: number = 0;
 
   constructor(consoleManager: ConsoleManager) {
     this.consoleManager = consoleManager;
@@ -34,6 +35,13 @@ export class CodeExecutor {
    */
   setKernelClient(client: KernelClient | null): void {
     this.kernelClient = client;
+  }
+
+  /**
+   * Reset Counter e.g. on kernel restart
+   */
+  resetCounter() {
+    this.counter = 0;
   }
 
   /**
@@ -87,7 +95,12 @@ export class CodeExecutor {
       const filename = editor
         ? path.basename(editor.document.fileName)
         : "editor";
-      codeToExecute = `print("\\n\\033[31mOut[${filename}]:\\n▶︎▶︎▶︎\\033[0m", flush=True)\n${code}\nprint("\\033[32m◀︎◀︎◀︎\\033[0m", flush=True)`;
+
+      const prefix = `print("\\n\\033[31mOut[${filename}: ${this.counter}]:\\n▶︎▶︎▶︎\\033[0m", flush=True)\n`;
+      const suffix = `\nprint("\\033[32m◀︎◀︎◀︎\\033[0m", flush=True)`;
+      codeToExecute = `${prefix}${code}${suffix}`;
+
+      this.counter++;
     }
 
     try {
