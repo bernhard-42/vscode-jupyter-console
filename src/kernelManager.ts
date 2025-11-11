@@ -513,7 +513,7 @@ export class KernelManager {
     await this.stopKernel(); // Now waits for process to actually exit
     await new Promise((resolve) =>
       setTimeout(resolve, getKernelOperationWait())
-    ); // Wait for kernel to fully stop
+    ); // Additional buffer for cleanup
     await this.startKernel();
   }
 
