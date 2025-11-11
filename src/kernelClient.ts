@@ -49,6 +49,7 @@ export class KernelClient {
   private isConnected: boolean = false;
   private outputCallbacks: Map<string, (output: string) => void> = new Map();
   private completionCallbacks: Map<string, () => void> = new Map();
+  private suppressStatusUpdates: Set<string> = new Set(); // Message IDs that should not update status bar
   private iopubListenerRunning: boolean = false;
   private iopubListenerPromise: Promise<void> | null = null;
   private stdinListenerRunning: boolean = false;
@@ -245,16 +246,20 @@ export class KernelClient {
             const contentObj = JSON.parse(content.toString());
             const msgType = headerObj.msg_type;
 
+            // Find the callback for this message's parent
+            const parentMsgId = parentHeaderObj.msg_id;
+
             // Handle status messages for UI feedback (all status messages, not just for specific executions)
+            // Skip status updates for executions that requested to suppress them (e.g., prefix/suffix labels)
             if (msgType === "status" && this.statusCallback) {
               const executionState = contentObj.execution_state;
               if (executionState === "busy" || executionState === "idle") {
-                this.statusCallback(executionState);
+                // Only update status bar if this execution is not suppressed
+                if (!this.suppressStatusUpdates.has(parentMsgId)) {
+                  this.statusCallback(executionState);
+                }
               }
             }
-
-            // Find the callback for this message's parent
-            const parentMsgId = parentHeaderObj.msg_id;
             const callback = this.outputCallbacks.get(parentMsgId);
 
             // Handle output messages if callback registered
@@ -507,7 +512,8 @@ export class KernelClient {
    */
   async executeCode(
     code: string,
-    onOutput?: (output: string) => void
+    onOutput?: (output: string) => void,
+    options?: { updateStatusBar?: boolean }
   ): Promise<void> {
     if (!this.shellSocket || !this.connectionInfo) {
       throw new Error("Not connected to kernel");
@@ -530,11 +536,16 @@ export class KernelClient {
       stop_on_error: false,
     });
 
-    // Set status to busy immediately before sending request
+    // Set status to busy immediately before sending request (if enabled)
     // This ensures UI is responsive even if kernel's status message is delayed
     // (e.g., when native extensions hold the GIL)
-    if (this.statusCallback) {
+    // Can be disabled for internal executions (like prefix/suffix labels)
+    const updateStatusBar = options?.updateStatusBar !== false; // Default to true
+    if (updateStatusBar && this.statusCallback) {
       this.statusCallback("busy");
+    } else if (!updateStatusBar) {
+      // Track this message ID to suppress status updates from kernel
+      this.suppressStatusUpdates.add(msg.header.msg_id);
     }
 
     // Create a promise that resolves when execution completes
@@ -547,6 +558,8 @@ export class KernelClient {
       // Register completion callback
       const completionCallback = () => {
         Logger.log("Received completion signal, resolving promise");
+        // Clean up suppress flag if it was set
+        this.suppressStatusUpdates.delete(msg.header.msg_id);
         resolve();
       };
       this.completionCallbacks.set(msg.header.msg_id, completionCallback);

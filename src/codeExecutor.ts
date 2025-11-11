@@ -89,27 +89,39 @@ export class CodeExecutor {
     const enableOutputViewer = config.get<boolean>("enableOutputViewer", false);
 
     // In single-terminal mode, add label to distinguish outputs from different files
-    let codeToExecute = code;
     if (!enableOutputViewer) {
       const editor = vscode.window.activeTextEditor;
       const filename = editor
         ? path.basename(editor.document.fileName)
         : "editor";
 
-      const prefix = `print("\\n\\033[31mOut[${filename}: ${this.counter}]:\\n▶︎▶︎▶︎\\033[0m", flush=True)\n`;
-      const suffix = `\nprint("\\033[32m◀︎◀︎◀︎\\033[0m", flush=True)`;
-      codeToExecute = `${prefix}${code}${suffix}`;
+      // Send prefix and suffix as separate execute requests to ensure proper ordering
+      // This is necessary because native extensions can block the IOPub thread,
+      // causing messages from a single execute_request to arrive out of order
+      const prefix = `print("\\n\\033[31mOut[${filename}: ${this.counter}]:\\n▶︎▶︎▶︎\\033[0m", flush=True)`;
+      const suffix = `print("\\033[32m◀︎◀︎◀︎\\033[0m", flush=True)`;
 
       this.counter++;
-    }
 
-    try {
-      // Execute via Jupyter protocol
-      // In two-terminal mode: Output Viewer shows outputs
-      // In single-terminal mode: Label helps distinguish which file output came from
-      await this.kernelClient.executeCode(codeToExecute);
-    } catch (error) {
-      vscode.window.showErrorMessage(`Execution error: ${error}`);
+      try {
+        // Execute prefix first (without status bar update)
+        await this.kernelClient.executeCode(prefix, undefined, { updateStatusBar: false });
+
+        // Execute user code (with status bar update)
+        await this.kernelClient.executeCode(code);
+
+        // Execute suffix (without status bar update)
+        await this.kernelClient.executeCode(suffix, undefined, { updateStatusBar: false });
+      } catch (error) {
+        vscode.window.showErrorMessage(`Execution error: ${error}`);
+      }
+    } else {
+      // Two-terminal mode: Execute code directly without labels
+      try {
+        await this.kernelClient.executeCode(code);
+      } catch (error) {
+        vscode.window.showErrorMessage(`Execution error: ${error}`);
+      }
     }
   }
 
