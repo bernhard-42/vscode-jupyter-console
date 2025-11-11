@@ -38,7 +38,7 @@ export function getKernelConnectionTimeout(): number {
 
 /** Timeout before force-killing an unresponsive kernel after interrupt */
 export function getInterruptTimeout(): number {
-  return getConfig().get<number>("advanced.interruptTimeout", 1000);
+  return getConfig().get<number>("advanced.interruptTimeout", 3000);
 }
 
 /** Timeout (in seconds) for Jupyter Console to wait for kernel's is_complete response */

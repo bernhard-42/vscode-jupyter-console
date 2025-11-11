@@ -132,8 +132,14 @@ export function registerCommands(
           // The wrapper calls km.interrupt_kernel() - the "Jupyter way" (cross-platform)
           await ctx.kernelManager.interruptKernel();
 
-          // Return to running state after interrupt
-          ctx.statusBarManager.setState(KernelState.Running);
+          // Show confirmation that interrupt was triggered
+          vscode.window.setStatusBarMessage(
+            "$(debug-pause) Kernel interrupt triggered",
+            5000
+          );
+
+          // Status bar will remain "busy" until kernel actually becomes idle
+          // The kernel status callback (extension.ts) handles the transition to Running
         } catch (error) {
           Logger.error("Failed to interrupt kernel:", error);
           vscode.window.showErrorMessage(

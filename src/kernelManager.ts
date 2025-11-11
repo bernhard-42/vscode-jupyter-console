@@ -397,7 +397,9 @@ export class KernelManager {
    */
   private checkKernelStillBusy(): void {
     if (!this.statusCheckCallback) {
-      Logger.error("No status check callback set, cannot check if kernel is busy");
+      Logger.error(
+        "No status check callback set, cannot check if kernel is busy"
+      );
       return;
     }
 
@@ -468,8 +470,8 @@ export class KernelManager {
     });
 
     // Staged shutdown approach with two timeouts:
-    const SIGTERM_DELAY_MS = 2000;  // Time to wait before sending SIGTERM
-    const MAX_WAIT_MS = 5000;        // Maximum time to wait before giving up
+    const SIGTERM_DELAY_MS = 2000; // Time to wait before sending SIGTERM
+    const MAX_WAIT_MS = 5000; // Maximum time to wait before giving up
 
     // Schedule SIGTERM as a "nudge" if process doesn't exit quickly
     const killTimeout = setTimeout(() => {
@@ -488,7 +490,9 @@ export class KernelManager {
     // Maximum wait timeout - give up if process still hasn't exited
     const timeoutPromise = new Promise<void>((resolve) => {
       setTimeout(() => {
-        Logger.log(`Kernel stop timeout reached (${MAX_WAIT_MS}ms), continuing anyway`);
+        Logger.log(
+          `Kernel stop timeout reached (${MAX_WAIT_MS}ms), continuing anyway`
+        );
         resolve();
       }, MAX_WAIT_MS);
     });
