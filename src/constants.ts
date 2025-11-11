@@ -35,3 +35,8 @@ export function getKernelOperationWait(): number {
 export function getKernelConnectionTimeout(): number {
   return getConfig().get<number>("advanced.kernelConnectionTimeout", 10000);
 }
+
+/** Timeout before force-killing an unresponsive kernel after interrupt */
+export function getInterruptTimeout(): number {
+  return getConfig().get<number>("advanced.interruptTimeout", 1000);
+}

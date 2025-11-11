@@ -67,6 +67,13 @@
           "description": "[Advanced] Timeout (in milliseconds) for kernel connection file to appear. Increase on slower machines.",
           "minimum": 1000,
           "order": 13
+        },
+        "jupyterConsole.advanced.interruptTimeout": {
+          "type": "number",
+          "default": 1000,
+          "description": "[Advanced] Timeout (in milliseconds) before force-killing an unresponsive kernel after interrupt. Useful for native code that doesn't respond to interrupts.",
+          "minimum": 1000,
+          "order": 14
         }
       }
     },

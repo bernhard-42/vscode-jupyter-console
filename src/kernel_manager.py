@@ -16,11 +16,68 @@ Listens for commands on stdin:
 """
 
 import argparse
+import os
+import signal
 import sys
 import threading
 import time
 
 from jupyter_client import KernelManager
+
+
+def force_kill_kernel(km):
+    """
+    Force-kill the kernel process at the OS level.
+    Works cross-platform: macOS, Linux, and Windows.
+    This is necessary for kernels stuck in native code that don't respond to interrupts.
+    """
+    if not hasattr(km, 'kernel') or not km.kernel:
+        print("FORCE_KILL_ERROR: No kernel process found", flush=True)
+        return False
+
+    try:
+        # Get the kernel process ID
+        kernel_pid = km.kernel.pid
+        if not kernel_pid:
+            print("FORCE_KILL_ERROR: Could not get kernel PID", flush=True)
+            return False
+
+        print(f"Force-killing kernel process {kernel_pid}", flush=True)
+
+        # Cross-platform process killing
+        if sys.platform == 'win32':
+            # Windows: Use SIGTERM (calls TerminateProcess internally)
+            # Note: SIGKILL doesn't exist on Windows
+            try:
+                os.kill(kernel_pid, signal.SIGTERM)
+            except Exception as e:
+                print(f"Failed to kill Windows process: {e}", flush=True)
+                # Try using taskkill as fallback
+                try:
+                    import subprocess
+                    subprocess.run(['taskkill', '/F', '/PID', str(kernel_pid)],
+                                   capture_output=True, timeout=5)
+                except Exception as e2:
+                    print(f"Taskkill fallback failed: {e2}", flush=True)
+        else:
+            # Unix (macOS/Linux): Use SIGKILL for immediate termination
+            try:
+                # Try to kill process group to get any child processes
+                os.killpg(os.getpgid(kernel_pid), signal.SIGKILL)
+            except (ProcessLookupError, PermissionError, OSError):
+                # Fallback to killing just the process
+                try:
+                    os.kill(kernel_pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    # Process already dead
+                    pass
+
+        print(f"Successfully killed kernel process {kernel_pid}", flush=True)
+        return True
+
+    except Exception as e:
+        print(f"FORCE_KILL_ERROR: {e}", flush=True)
+        return False
 
 
 def command_listener(km):
@@ -40,7 +97,13 @@ def command_listener(km):
                     print(f"INTERRUPT_ERROR: {e}", flush=True)
             elif command == "SHUTDOWN":
                 print("SHUTDOWN_ACK", flush=True)
-                km.shutdown_kernel()
+                # First try graceful shutdown
+                try:
+                    km.shutdown_kernel(now=False)
+                except Exception:
+                    pass  # Ignore errors, will force-kill anyway
+                # Then force-kill the process to ensure termination
+                force_kill_kernel(km)
                 break
     except Exception:
         # stdin closed or error - this is expected when parent process exits
@@ -75,7 +138,10 @@ def main():
             time.sleep(0.1)
     except KeyboardInterrupt:
         # Clean shutdown on interrupt
-        km.shutdown_kernel()
+        pass
+    finally:
+        # Always force-kill the kernel on exit to ensure termination
+        force_kill_kernel(km)
 
 
 if __name__ == "__main__":

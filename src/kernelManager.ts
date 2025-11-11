@@ -13,6 +13,7 @@ import { Logger } from "./logger";
 import {
   getKernelConnectionTimeout,
   getKernelOperationWait,
+  getInterruptTimeout,
 } from "./constants";
 import { promisify } from "util";
 
@@ -22,9 +23,19 @@ export class KernelManager {
   private kernelProcess: cp.ChildProcess | null = null;
   private connectionFile: string | null = null;
   private pythonPath: string;
+  private interruptTimeoutHandle: NodeJS.Timeout | null = null;
+  private statusCheckCallback: (() => boolean) | null = null;
 
   constructor(pythonPath?: string) {
     this.pythonPath = pythonPath || "python";
+  }
+
+  /**
+   * Set callback to check if kernel is still busy
+   * Returns true if kernel is busy, false if idle
+   */
+  setStatusCheckCallback(callback: () => boolean): void {
+    this.statusCheckCallback = callback;
   }
 
   /**
@@ -341,6 +352,8 @@ export class KernelManager {
    * Interrupt the kernel
    * Sends INTERRUPT command to kernel_manager.py which calls km.interrupt_kernel()
    * This is the "Jupyter way" and works cross-platform including Windows
+   *
+   * After interrupt, checks if kernel is still busy and notifies user to restart if needed.
    */
   async interruptKernel(): Promise<void> {
     if (!this.kernelProcess || !this.kernelProcess.stdin) {
@@ -349,11 +362,28 @@ export class KernelManager {
     }
 
     try {
+      // Clear any existing interrupt timeout
+      if (this.interruptTimeoutHandle) {
+        clearTimeout(this.interruptTimeoutHandle);
+        this.interruptTimeoutHandle = null;
+      }
+
       // Send INTERRUPT command to Python wrapper via stdin
       // The wrapper will call KernelManager.interrupt_kernel() which handles
       // Windows event mechanism and Unix signals appropriately
       this.kernelProcess.stdin.write("INTERRUPT\n");
       Logger.log("Sent INTERRUPT command to kernel manager");
+
+      // Wait a bit, then check if kernel is still busy
+      // If so, notify user that they need to restart (kernel stuck in native code)
+      const timeout = getInterruptTimeout();
+      this.interruptTimeoutHandle = setTimeout(() => {
+        this.checkKernelStillBusy();
+      }, timeout);
+
+      Logger.log(
+        `Will check kernel status in ${timeout}ms to see if interrupt worked`
+      );
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
       Logger.error(`Failed to send interrupt command: ${errorMsg}`);
@@ -362,7 +392,51 @@ export class KernelManager {
   }
 
   /**
+   * Check if kernel is still busy after interrupt
+   * If so, notify user to restart the kernel
+   */
+  private checkKernelStillBusy(): void {
+    if (!this.statusCheckCallback) {
+      Logger.error("No status check callback set, cannot check if kernel is busy");
+      return;
+    }
+
+    const isBusy = this.statusCheckCallback();
+    if (isBusy) {
+      Logger.error(
+        "Kernel is still busy after interrupt - likely stuck in native code"
+      );
+      vscode.window
+        .showErrorMessage(
+          "Kernel did not respond to interrupt (likely stuck in native code). Please restart the kernel.",
+          "Restart Kernel"
+        )
+        .then((choice) => {
+          if (choice === "Restart Kernel") {
+            // Execute the full restart command which handles cleanup and reconnection
+            vscode.commands.executeCommand("jupyterConsole.restartKernel");
+          }
+        });
+    } else {
+      Logger.log("Kernel responded to interrupt successfully");
+    }
+  }
+
+  /**
+   * Cancel interrupt timeout check (called when execution completes normally)
+   */
+  cancelInterruptTimeout(): void {
+    if (this.interruptTimeoutHandle) {
+      clearTimeout(this.interruptTimeoutHandle);
+      this.interruptTimeoutHandle = null;
+      Logger.log("Interrupt check cancelled - execution completed normally");
+    }
+  }
+
+  /**
    * Stop the kernel
+   * Always uses force shutdown to ensure clean termination
+   * Kills both the Python wrapper and the kernel process (cross-platform)
    */
   stopKernel(): void {
     if (!this.kernelProcess) {
@@ -370,13 +444,44 @@ export class KernelManager {
       return;
     }
 
-    this.kernelProcess.kill();
+    // Send SHUTDOWN command for clean shutdown
+    // The Python wrapper will force-kill the kernel process at OS level
+    if (this.kernelProcess.stdin) {
+      try {
+        this.kernelProcess.stdin.write("SHUTDOWN\n");
+        Logger.log("Sent SHUTDOWN command to kernel manager");
+      } catch (error) {
+        Logger.error(`Failed to send shutdown command: ${error}`);
+      }
+    }
+
+    // Give the Python wrapper a moment to force-kill the kernel
+    setTimeout(() => {
+      if (this.kernelProcess) {
+        // Kill the wrapper process itself (cross-platform)
+        // On Unix: SIGTERM, On Windows: TerminateProcess
+        try {
+          this.kernelProcess.kill("SIGTERM");
+          Logger.log("Killed kernel manager wrapper process");
+        } catch (error) {
+          Logger.error(`Failed to kill wrapper process: ${error}`);
+        }
+      }
+    }, 500);
+
     this.kernelProcess = null;
     this.connectionFile = null;
+
+    // Cancel any pending interrupt check
+    if (this.interruptTimeoutHandle) {
+      clearTimeout(this.interruptTimeoutHandle);
+      this.interruptTimeoutHandle = null;
+    }
   }
 
   /**
    * Restart the kernel
+   * Always uses force shutdown to ensure clean termination
    */
   async restartKernel(): Promise<void> {
     this.stopKernel();

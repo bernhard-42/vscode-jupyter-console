@@ -40,13 +40,24 @@ async function connectKernelClient(): Promise<void> {
   await kernelClient.connect(connectionFile);
   codeExecutor.setKernelClient(kernelClient);
 
+  // Track current kernel state for interrupt checking
+  let currentKernelState: "busy" | "idle" = "idle";
+
   // Set up status callback to update status bar during execution
   kernelClient.setStatusCallback((state) => {
+    currentKernelState = state;
     if (state === "busy") {
       statusBarManager.setState(KernelState.Busy);
     } else if (state === "idle") {
       statusBarManager.setState(KernelState.Running);
+      // Cancel interrupt check when kernel becomes idle (execution completed normally)
+      kernelManager.cancelInterruptTimeout();
     }
+  });
+
+  // Set up status check callback for interrupt verification
+  kernelManager.setStatusCheckCallback(() => {
+    return currentKernelState === "busy";
   });
 
   Logger.log("Kernel client connected");
