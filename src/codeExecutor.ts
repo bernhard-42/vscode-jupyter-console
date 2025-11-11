@@ -150,7 +150,12 @@ export class CodeExecutor {
         break;
 
       case ExecutionType.Range:
-        code = CellDetector.getCodeAtLine(editor.document, line, fromTop, toEnd);
+        code = CellDetector.getCodeAtLine(
+          editor.document,
+          line,
+          fromTop,
+          toEnd
+        );
         if (!code?.trim()) {
           const msg = fromTop
             ? "No code to execute above"
@@ -219,7 +224,11 @@ export class CodeExecutor {
    * CodeLens: Run Cell Above - run cell above and move cursor to this cell
    */
   codeLensRunCellAbove(markerLine: number): void {
-    this.executeAndAdvance(ExecutionType.Cell, markerLine > 0 ? markerLine - 1 : 0, false);
+    this.executeAndAdvance(
+      ExecutionType.Cell,
+      markerLine > 0 ? markerLine - 1 : 0,
+      false
+    );
     // CellDetector.moveCursorToLine(markerLine + 1);
   }
 
@@ -227,14 +236,18 @@ export class CodeExecutor {
    * CodeLens: Run All Below - run all code from marker to end, keep cursor
    */
   codeLensRunAllBelow(markerLine: number): void {
-    this.executeAndAdvance(ExecutionType.Range, markerLine + 1, false, { toEnd: true });
+    this.executeAndAdvance(ExecutionType.Range, markerLine + 1, false, {
+      toEnd: true,
+    });
   }
 
   /**
    * CodeLens: Run All Above - run all code from start to marker, keep cursor
    */
   codeLensRunAllAbove(markerLine: number): void {
-    this.executeAndAdvance(ExecutionType.Range, markerLine, false, { fromTop: true });
+    this.executeAndAdvance(ExecutionType.Range, markerLine, false, {
+      fromTop: true,
+    });
   }
 
   /**
