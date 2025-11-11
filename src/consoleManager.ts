@@ -279,6 +279,16 @@ export class ConsoleManager {
   }
 
   /**
+   * Check if a terminal is one of the Jupyter Console terminals
+   */
+  isJupyterTerminal(terminal: vscode.Terminal | undefined): boolean {
+    if (!terminal) {
+      return false;
+    }
+    return terminal === this.viewerTerminal || terminal === this.consoleTerminal;
+  }
+
+  /**
    * Close both terminals
    */
   closeTerminals(): void {

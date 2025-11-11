@@ -117,6 +117,10 @@ export async function activate(context: vscode.ExtensionContext) {
     statusBarManager = new StatusBarManager(kernelManager);
     Logger.log("✓ StatusBarManager created");
 
+    // Connect console manager to status bar manager for terminal visibility tracking
+    statusBarManager.setConsoleManager(consoleManager);
+    Logger.log("✓ ConsoleManager linked to StatusBarManager");
+
     // Detect and set Python environment on activation
     Logger.log("Detecting Python environment...");
     const pythonPath = await getPythonPath();

@@ -8,6 +8,7 @@
 
 import * as vscode from "vscode";
 import { KernelManager } from "./kernelManager";
+import { ConsoleManager } from "./consoleManager";
 import { Logger } from "./logger";
 import { getPythonEnvName } from "./pythonIntegration";
 
@@ -21,6 +22,7 @@ export enum KernelState {
 export class StatusBarManager {
   private statusBarItem: vscode.StatusBarItem;
   private kernelManager: KernelManager;
+  private consoleManager: ConsoleManager | null = null;
   private currentState: KernelState = KernelState.Stopped;
   private pythonEnvName: string = "Python";
   private disposables: vscode.Disposable[] = [];
@@ -58,15 +60,34 @@ export class StatusBarManager {
         this.updateStatusBar();
       })
     );
+
+    // Listen to terminal changes to show status bar when Jupyter Console is active
+    this.disposables.push(
+      vscode.window.onDidChangeActiveTerminal(() => {
+        this.updateStatusBar();
+      })
+    );
+  }
+
+  /**
+   * Set the console manager reference (called after ConsoleManager is created)
+   */
+  setConsoleManager(consoleManager: ConsoleManager): void {
+    this.consoleManager = consoleManager;
   }
 
   /**
    * Update the status bar based on current state
    */
   private updateStatusBar(): void {
-    // Only show status bar when a Python file is open
+    // Show status bar when:
+    // 1. A Python file is open, OR
+    // 2. One of the Jupyter Console terminals is active
     const editor = vscode.window.activeTextEditor;
-    if (!editor || editor.document.languageId !== "python") {
+    const isPythonFile = editor && editor.document.languageId === "python";
+    const isJupyterTerminal = this.consoleManager?.isJupyterTerminal(vscode.window.activeTerminal);
+
+    if (!isPythonFile && !isJupyterTerminal) {
       this.statusBarItem.hide();
       return;
     }
