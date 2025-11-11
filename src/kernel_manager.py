@@ -30,16 +30,17 @@ def force_kill_kernel(km):
     Force-kill the kernel process at the OS level.
     Works cross-platform: macOS, Linux, and Windows.
     This is necessary for kernels stuck in native code that don't respond to interrupts.
+    Silent if kernel is already dead (not an error condition).
     """
     if not hasattr(km, 'kernel') or not km.kernel:
-        print("FORCE_KILL_ERROR: No kernel process found", flush=True)
+        # Kernel already cleaned up - nothing to do
         return False
 
     try:
         # Get the kernel process ID
         kernel_pid = km.kernel.pid
         if not kernel_pid:
-            print("FORCE_KILL_ERROR: Could not get kernel PID", flush=True)
+            # No PID - nothing to kill
             return False
 
         print(f"Force-killing kernel process {kernel_pid}", flush=True)
@@ -97,12 +98,16 @@ def command_listener(km):
                     print(f"INTERRUPT_ERROR: {e}", flush=True)
             elif command == "SHUTDOWN":
                 print("SHUTDOWN_ACK", flush=True)
-                # First try graceful shutdown
+                # Force immediate shutdown without graceful shutdown request
+                # Using now=True skips sending shutdown_request which can interrupt
+                # a kernel that's still starting up (during module imports)
                 try:
-                    km.shutdown_kernel(now=False)
+                    km.shutdown_kernel(now=True)
                 except Exception:
-                    pass  # Ignore errors, will force-kill anyway
-                # Then force-kill the process to ensure termination
+                    pass  # Ignore exceptions, force_kill_kernel will handle it
+
+                # Always force-kill to ensure termination
+                # force_kill_kernel is silent if nothing to kill (not an error)
                 force_kill_kernel(km)
                 break
     except Exception:
@@ -140,7 +145,8 @@ def main():
         # Clean shutdown on interrupt
         pass
     finally:
-        # Always force-kill the kernel on exit to ensure termination
+        # Always force-kill on exit to ensure termination
+        # Silent if kernel is already dead (not an error)
         force_kill_kernel(km)
 
 
