@@ -393,6 +393,14 @@ export class KernelClient {
             });
 
             statusDisposable.dispose();
+
+            // If user pressed ESC (selected is undefined), interrupt kernel
+            if (selected === undefined) {
+              Logger.log("User cancelled selection with ESC - interrupting kernel execution");
+              await this.interrupt();
+              return;
+            }
+
             userInput = selected;
           } else {
             // Show temporary status message for text input
@@ -414,11 +422,22 @@ export class KernelClient {
 
           Logger.log(`User input received: ${userInput !== undefined ? "(provided)" : "(cancelled)"}`);
 
+          // If user pressed ESC (userInput is undefined), interrupt kernel instead of sending empty reply
+          if (userInput === undefined) {
+            Logger.log("User cancelled input with ESC - interrupting kernel execution");
+
+            // Interrupt the kernel execution
+            await this.interrupt();
+
+            // Don't send input_reply - let the interrupt handle stopping execution
+            return;
+          }
+
           // Send input_reply back to kernel
           const reply = this.createMessage(
             "input_reply",
             {
-              value: userInput || "",
+              value: userInput,
             },
             header
           );
