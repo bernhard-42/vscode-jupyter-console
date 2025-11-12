@@ -397,7 +397,8 @@ export class KernelClient {
             // If user pressed ESC (selected is undefined), interrupt kernel
             if (selected === undefined) {
               Logger.log("User cancelled selection with ESC - interrupting kernel execution");
-              await this.interrupt();
+              // Use VS Code command which triggers kernelManager.interruptKernel() (cross-platform)
+              await vscode.commands.executeCommand("jupyterConsole.interruptKernel");
               return;
             }
 
@@ -426,8 +427,9 @@ export class KernelClient {
           if (userInput === undefined) {
             Logger.log("User cancelled input with ESC - interrupting kernel execution");
 
-            // Interrupt the kernel execution
-            await this.interrupt();
+            // Interrupt the kernel execution using VS Code command
+            // This triggers kernelManager.interruptKernel() which works cross-platform (including Windows)
+            await vscode.commands.executeCommand("jupyterConsole.interruptKernel");
 
             // Don't send input_reply - let the interrupt handle stopping execution
             return;
