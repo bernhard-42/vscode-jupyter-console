@@ -40,6 +40,24 @@
           "minimum": 0,
           "order": 1
         },
+        "jupyterConsole.executionBlockPrefix": {
+          "type": "string",
+          "default": "",
+          "description": "Prefix marker shown before code execution in Jupyter Console (when Output Viewer is disabled). Set to empty string to hide.",
+          "order": 2
+        },
+        "jupyterConsole.executionBlockSuffixSuccess": {
+          "type": "string",
+          "default": "✔︎",
+          "description": "Suffix marker shown after successful code execution in Jupyter Console (when Output Viewer is disabled). Displayed in green. Set to empty string to hide.",
+          "order": 3
+        },
+        "jupyterConsole.executionBlockSuffixFailure": {
+          "type": "string",
+          "default": "✘",
+          "description": "Suffix marker shown after failed code execution in Jupyter Console (when Output Viewer is disabled). Displayed in red. Set to empty string to hide.",
+          "order": 4
+        },
         "jupyterConsole.advanced.viewerTerminalStartDelay": {
           "type": "number",
           "default": 1000,

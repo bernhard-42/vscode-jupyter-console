@@ -50,6 +50,7 @@ export class KernelClient {
   private outputCallbacks: Map<string, (output: string) => void> = new Map();
   private completionCallbacks: Map<string, () => void> = new Map();
   private suppressStatusUpdates: Set<string> = new Set(); // Message IDs that should not update status bar
+  private executionErrors: Map<string, boolean> = new Map(); // Track errors by msg_id
   private iopubListenerRunning: boolean = false;
   private iopubListenerPromise: Promise<void> | null = null;
   private stdinListenerRunning: boolean = false;
@@ -261,6 +262,12 @@ export class KernelClient {
               }
             }
             const callback = this.outputCallbacks.get(parentMsgId);
+
+            // Track errors regardless of whether callback is registered
+            // This is necessary for single-terminal mode where outputs go directly to console
+            if (msgType === "error") {
+              this.executionErrors.set(parentMsgId, true);
+            }
 
             // Handle output messages if callback registered
             if (callback) {
@@ -514,7 +521,7 @@ export class KernelClient {
     code: string,
     onOutput?: (output: string) => void,
     options?: { updateStatusBar?: boolean }
-  ): Promise<void> {
+  ): Promise<{ hadError: boolean }> {
     if (!this.shellSocket || !this.connectionInfo) {
       throw new Error("Not connected to kernel");
     }
@@ -549,7 +556,7 @@ export class KernelClient {
     }
 
     // Create a promise that resolves when execution completes
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<{ hadError: boolean }>((resolve, reject) => {
       // Register output callback if provided
       if (onOutput) {
         this.outputCallbacks.set(msg.header.msg_id, onOutput);
@@ -558,9 +565,15 @@ export class KernelClient {
       // Register completion callback
       const completionCallback = () => {
         Logger.log("Received completion signal, resolving promise");
-        // Clean up suppress flag if it was set
+
+        // Check if this execution had an error
+        const hadError = this.executionErrors.get(msg.header.msg_id) || false;
+
+        // Clean up tracking maps
         this.suppressStatusUpdates.delete(msg.header.msg_id);
-        resolve();
+        this.executionErrors.delete(msg.header.msg_id);
+
+        resolve({ hadError });
       };
       this.completionCallbacks.set(msg.header.msg_id, completionCallback);
 
@@ -626,9 +639,10 @@ export class KernelClient {
     this.iopubListenerRunning = false;
     this.stdinListenerRunning = false;
 
-    // Clear all callbacks
+    // Clear all callbacks and tracking maps
     this.outputCallbacks.clear();
     this.completionCallbacks.clear();
+    this.executionErrors.clear();
 
     // Close sockets to break the listener loop
     if (this.shellSocket) {
