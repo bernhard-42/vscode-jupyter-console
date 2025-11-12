@@ -49,14 +49,23 @@ export class CodeExecutor {
    */
   private async executeCode(code: string): Promise<void> {
     if (!this.kernelClient || !this.kernelClient.isKernelConnected()) {
-      // Ask user if they want to start the kernel
-      const answer = await vscode.window.showInformationMessage(
-        "No kernel is running. Start kernel now?",
-        "Yes",
-        "No"
-      );
+      // Check if we should automatically start kernel or prompt
+      const config = vscode.workspace.getConfiguration("jupyterConsole");
+      const autoStartKernel = config.get<boolean>("autoStartKernel", false);
 
-      if (answer === "Yes") {
+      let shouldStart = autoStartKernel;
+
+      if (!autoStartKernel) {
+        // Prompt user if they want to start the kernel
+        const answer = await vscode.window.showInformationMessage(
+          "No kernel is running. Start kernel now?",
+          "Yes",
+          "No"
+        );
+        shouldStart = answer === "Yes";
+      }
+
+      if (shouldStart) {
         // Start the kernel
         await vscode.commands.executeCommand("jupyterConsole.startKernel");
 

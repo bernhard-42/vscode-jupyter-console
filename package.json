@@ -58,6 +58,12 @@
           "description": "Suffix marker shown after failed code execution in Jupyter Console (when Output Viewer is disabled). Displayed in red. Set to empty string to hide.",
           "order": 4
         },
+        "jupyterConsole.autoStartKernel": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically start kernel when executing code without a running kernel. If disabled, you will be prompted to start the kernel.",
+          "order": 5
+        },
         "jupyterConsole.advanced.viewerTerminalStartDelay": {
           "type": "number",
           "default": 1000,
