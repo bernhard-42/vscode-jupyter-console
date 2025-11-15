@@ -105,36 +105,56 @@ export class CodeExecutor {
         : "editor";
 
       // Get configurable prefix and suffix markers
-      const prefixMarker = config.get<string>("executionBlockPrefix", "");
-      const suffixSuccess = config.get<string>("executionBlockSuffixSuccess", "✔︎");
-      const suffixFailure = config.get<string>("executionBlockSuffixFailure", "✘");
+      let prefixMarker = config.get<string>("executionBlockPrefix", "");
+      const suffixSuccess = config.get<string>(
+        "executionBlockSuffixSuccess",
+        ""
+      );
+      const suffixFailure = config.get<string>(
+        "executionBlockSuffixFailure",
+        ""
+      );
+      const enforcePrompt = config.get<boolean>(
+        "executionBlockEnforcePrompt",
+        true
+      );
 
       // Send prefix and suffix as separate execute requests to ensure proper ordering
       // This is necessary because native extensions can block the IOPub thread,
       // causing messages from a single execute_request to arrive out of order
 
       // Build prefix: only include newline if prefix marker is not empty
-      const prefixNewline = prefixMarker ? "\\n" : "";
-      const prefix = prefixMarker
-        ? `print("${prefixNewline}\\033[31mOut[${filename}: ${this.counter}]:\\n${prefixMarker}\\033[0m", flush=True)`
-        : `print("\\033[31mOut[${filename}: ${this.counter}]:\\033[0m", flush=True)`;
-
-      this.counter++;
 
       try {
-        // Execute prefix first (without status bar update)
-        await this.kernelClient.executeCode(prefix, undefined, { updateStatusBar: false });
+        // Execute prefix first (without status bar update), default is "Out[{filename}: {counter}]:"
+        if (prefixMarker != "") {
+          prefixMarker = prefixMarker.replace("{filename}", filename);
+          prefixMarker = prefixMarker.replace(
+            "{counter}",
+            this.counter.toString()
+          );
+          const prefix = `print("\\033[31m${prefixMarker}\\033[0m", flush=True)`;
+          await this.kernelClient.executeCode(prefix, undefined, {
+            updateStatusBar: false,
+          });
+        }
+        this.counter++;
 
         // Execute user code (with status bar update) and track errors
         const result = await this.kernelClient.executeCode(code);
 
         // Execute suffix based on error status (without status bar update)
-        // Use success marker (green) or failure marker (red)
-        const suffixMarker = result.hadError ? suffixFailure : suffixSuccess;
-        if (suffixMarker) {
+        // Use success marker (green) or failure marker (red), defaults are ✔︎ and ✘
+        if (suffixFailure != "" || suffixSuccess != "") {
+          const suffixMarker = result.hadError ? suffixFailure : suffixSuccess;
           const suffixColor = result.hadError ? "31" : "32"; // Red for error, green for success
           const suffix = `print("\\033[${suffixColor}m${suffixMarker}\\033[0m", flush=True)`;
-          await this.kernelClient.executeCode(suffix, undefined, { updateStatusBar: false });
+          await this.kernelClient.executeCode(suffix, undefined, {
+            updateStatusBar: false,
+          });
+        }
+        if (enforcePrompt) {
+          this.consoleManager.sendToConsole("\n");
         }
       } catch (error) {
         vscode.window.showErrorMessage(`Execution error: ${error}`);
