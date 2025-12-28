@@ -16,7 +16,10 @@ jobs:
             name: Windows
           - os: ubuntu-latest
             target: linux-x64
-            name: Linux
+            name: Linux x64
+          - os: ubuntu-latest
+            target: linux-arm64
+            name: Linux ARM64
           - os: macos-latest
             target: darwin-x64
             name: macOS Intel
@@ -83,7 +86,8 @@ jobs:
 
             Download the appropriate VSIX file for your platform:
             - **Windows**: `*-win32-x64.vsix`
-            - **Linux**: `*-linux-x64.vsix`
+            - **Linux x64**: `*-linux-x64.vsix`
+            - **Linux ARM64**: `*-linux-arm64.vsix`
             - **macOS Intel**: `*-darwin-x64.vsix`
             - **macOS Apple Silicon**: `*-darwin-arm64.vsix`
 

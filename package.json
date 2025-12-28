@@ -280,6 +280,7 @@
     "lint": "eslint src --ext ts",
     "package:win32": "vsce package --yarn --target win32-x64 --ignoreFile .vscodeignore.win32-x64",
     "package:linux": "vsce package --yarn --target linux-x64 --ignoreFile .vscodeignore.linux-x64",
+    "package:linux-arm": "vsce package --yarn --target linux-arm64 --ignoreFile .vscodeignore.linux-arm64",
     "package:mac-intel": "vsce package --yarn --target darwin-x64 --ignoreFile .vscodeignore.darwin-x64",
     "package:mac-arm": "vsce package --yarn --target darwin-arm64 --ignoreFile .vscodeignore.darwin-arm64",
     "release": "VERSION=$(node -p \"require('./package.json').version\") && git add . && (git diff --cached --quiet || git commit -m \"building release $VERSION\") && git tag \"v$VERSION\""
