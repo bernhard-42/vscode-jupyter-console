@@ -1,0 +1,53 @@
+.vscode/**
+.vscode-test/**
+src/**
+work/**
+.gitignore
+.yarnrc
+vsc-extension-quickstart.md
+**/tsconfig.json
+**/.eslintrc.json
+node_modules/**
+
+# Re-include only specific packages
+!node_modules/uuid/**
+!node_modules/node-addon-api/**
+
+# cmake-ts: Only include runtime loader (not build tools)
+!node_modules/cmake-ts/package.json
+!node_modules/cmake-ts/build/loader.js
+!node_modules/cmake-ts/build/loader.d.ts
+!node_modules/cmake-ts/build/deps/**
+
+# Re-include only specific zeromq files (NOT the root directory)
+!node_modules/zeromq/package.json
+!node_modules/zeromq/lib/**
+!node_modules/zeromq/v5-compat.d.ts
+!node_modules/zeromq/draft.d.ts
+
+# Exclude all zeromq build directories
+node_modules/zeromq/build/**
+
+# Re-include ONLY darwin-x64 binary and manifest
+!node_modules/zeromq/build/manifest.json
+!node_modules/zeromq/build/darwin/x64/**/*.node
+
+# Exclude TS sources and maps
+**/*.ts
+**/*.map
+node_modules/zeromq/src/**
+
+.git/**
+yarn.lock
+package-lock.json
+.claude
+test-env/**
+.ipynb_checkpoints/**
+**/.ipynb_checkpoints/**
+*.ipynb
+Untitled.ipynb
+vibe-coding/**
+OPTION.md
+out/test/**
+.github/**
+media/**
