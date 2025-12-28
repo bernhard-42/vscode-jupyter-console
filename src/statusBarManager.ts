@@ -133,7 +133,7 @@ export class StatusBarManager {
   setState(state: KernelState): void {
     this.currentState = state;
     this.updateStatusBar();
-    Logger.log(`Kernel state changed to: ${state}`);
+    Logger.debug(`Kernel state changed to: ${state}`);
   }
 
   /**

@@ -102,7 +102,7 @@ export async function registerPythonInterpreterListener(
   statusBarManager: StatusBarManager,
   cleanupKernelClient: () => Promise<void>
 ): Promise<void> {
-  Logger.log("Setting up Python interpreter change listener...");
+  Logger.debug("Setting up Python interpreter change listener...");
   const pythonExtension = vscode.extensions.getExtension("ms-python.python");
 
   if (!pythonExtension) {
@@ -121,31 +121,31 @@ export async function registerPythonInterpreterListener(
   // Listen for environment changes
   context.subscriptions.push(
     pythonApi.environments.onDidChangeActiveEnvironmentPath(async (e: any) => {
-      Logger.log("Python interpreter changed!");
-      Logger.log(`New interpreter path: ${e.path}`);
+      Logger.info("Python interpreter changed!");
+      Logger.info(`New interpreter path: ${e.path}`);
 
       // Check if kernel was running before cleanup
       const wasRunning = kernelManager.isRunning();
 
       // Clean up without confirmation
       await cleanupKernelClient();
-      Logger.log("✓ Terminals closed and kernel client disconnected");
+      Logger.debug("✓ Terminals closed and kernel client disconnected");
 
       // Stop kernel process
       if (wasRunning) {
         await kernelManager.stopKernel();
-        Logger.log("✓ Kernel stopped");
+        Logger.info("✓ Kernel stopped due to Python interpreter change");
       }
 
       // Update kernel manager with new Python path
       const newPythonPath = e.path;
       kernelManager.setPythonPath(newPythonPath);
-      Logger.log(`✓ Kernel manager updated with new path: ${newPythonPath}`);
+      Logger.debug(`✓ Kernel manager updated with new path: ${newPythonPath}`);
 
       // Update status bar with environment name
       await statusBarManager.updatePythonEnv();
       statusBarManager.setState(KernelState.Stopped);
-      Logger.log("✓ Status bar updated");
+      Logger.debug("✓ Status bar updated");
 
       // Show temporary status message only if kernel was running
       if (wasRunning) {
@@ -157,5 +157,5 @@ export async function registerPythonInterpreterListener(
     })
   );
 
-  Logger.log("✓ Python interpreter change listener registered");
+  Logger.debug("✓ Python interpreter change listener registered");
 }

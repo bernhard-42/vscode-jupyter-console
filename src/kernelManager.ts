@@ -97,12 +97,12 @@ export class KernelManager {
         command = `uv add --python "${this.pythonPath}" ${packages.join(" ")}`;
       }
 
-      Logger.log(`Installing packages: ${command}`);
+      Logger.info(`Installing packages: ${command}`);
 
       // Get current workspace directory for uv add to find pyproject.toml
       const cwd =
         vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || process.cwd();
-      Logger.log(`Using working directory: ${cwd}`);
+      Logger.info(`Using working directory: ${cwd}`);
 
       // Use progress notification that auto-dismisses when done
       await vscode.window.withProgress(
@@ -113,9 +113,9 @@ export class KernelManager {
         },
         async (_progress) => {
           const { stdout, stderr } = await execAsync(command, { cwd });
-          Logger.log(`Installation output: ${stdout}`);
+          Logger.info(`Installation output: ${stdout}`);
           if (stderr) {
-            Logger.log(`Installation stderr: ${stderr}`);
+            Logger.info(`Installation stderr: ${stderr}`);
           }
         }
       );
@@ -167,7 +167,7 @@ export class KernelManager {
       const workspaceDir =
         vscode.workspace.workspaceFolders?.[0]?.uri.fsPath || process.cwd();
 
-      Logger.log(
+      Logger.info(
         `Starting kernel with command: ${this.pythonPath} -u "${kernelManagerScript}" --cwd "${workspaceDir}"`
       );
 
@@ -196,7 +196,7 @@ export class KernelManager {
 
       // Log stdout (connection file, ACKs, etc.)
       this.kernelProcess.stdout?.on("data", (data) => {
-        Logger.log(`Kernel stdout: ${data.toString()}`);
+        Logger.debug(`Kernel stdout: ${data.toString()}`);
       });
 
       // Wait for connection file to be created
@@ -245,7 +245,7 @@ export class KernelManager {
         const match = buffer.match(/((?:\/|[A-Za-z]:\\)[^\s]+\.json)/);
         if (match) {
           this.connectionFile = match[1].trim();
-          Logger.log(
+          Logger.debug(
             `Found connection file in ${source}: ${this.connectionFile}`
           );
           return true;
@@ -372,7 +372,7 @@ export class KernelManager {
       // The wrapper will call KernelManager.interrupt_kernel() which handles
       // Windows event mechanism and Unix signals appropriately
       this.kernelProcess.stdin.write("INTERRUPT\n");
-      Logger.log("Sent INTERRUPT command to kernel manager");
+      Logger.debug("Sent INTERRUPT command to kernel manager");
 
       // Wait a bit, then check if kernel is still busy
       // If so, notify user that they need to restart (kernel stuck in native code)
@@ -381,7 +381,7 @@ export class KernelManager {
         this.checkKernelStillBusy();
       }, timeout);
 
-      Logger.log(
+      Logger.debug(
         `Will check kernel status in ${timeout}ms to see if interrupt worked`
       );
     } catch (error) {
@@ -420,7 +420,7 @@ export class KernelManager {
           }
         });
     } else {
-      Logger.log("Kernel responded to interrupt successfully");
+      Logger.info("Kernel responded to interrupt successfully");
     }
   }
 
@@ -431,7 +431,7 @@ export class KernelManager {
     if (this.interruptTimeoutHandle) {
       clearTimeout(this.interruptTimeoutHandle);
       this.interruptTimeoutHandle = null;
-      Logger.log("Interrupt check cancelled - execution completed normally");
+      Logger.debug("Interrupt check cancelled - execution completed normally");
     }
   }
 
@@ -455,7 +455,7 @@ export class KernelManager {
     if (processToKill.stdin) {
       try {
         processToKill.stdin.write("SHUTDOWN\n");
-        Logger.log("Sent SHUTDOWN command to kernel manager");
+        Logger.info("Sent SHUTDOWN command to kernel manager");
       } catch (error) {
         Logger.error(`Failed to send shutdown command: ${error}`);
       }
@@ -464,7 +464,7 @@ export class KernelManager {
     // Wait for process to exit, with timeout
     const exitPromise = new Promise<void>((resolve) => {
       processToKill.once("exit", () => {
-        Logger.log(`Kernel process ${pid} exited`);
+        Logger.debug(`Kernel process ${pid} exited`);
         resolve();
       });
     });
@@ -480,7 +480,7 @@ export class KernelManager {
         // Node.js handles platform differences: SIGTERM on Unix, TerminateProcess on Windows
         try {
           processToKill.kill("SIGTERM");
-          Logger.log("Sent SIGTERM to kernel manager wrapper process");
+          Logger.debug("Sent SIGTERM to kernel manager wrapper process");
         } catch (error) {
           Logger.error(`Failed to kill wrapper process: ${error}`);
         }
@@ -490,7 +490,7 @@ export class KernelManager {
     // Maximum wait timeout - give up if process still hasn't exited
     const timeoutPromise = new Promise<void>((resolve) => {
       setTimeout(() => {
-        Logger.log(
+        Logger.debug(
           `Kernel stop timeout reached (${MAX_WAIT_MS}ms), continuing anyway`
         );
         resolve();
@@ -512,7 +512,7 @@ export class KernelManager {
       this.interruptTimeoutHandle = null;
     }
 
-    Logger.log("stopKernel completed");
+    Logger.info("stopKernel completed");
   }
 
   /**

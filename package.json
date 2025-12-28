@@ -70,47 +70,53 @@
           "minimum": 0,
           "order": 6
         },
+        "jupyterConsole.debug": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable debug logging to the Jupyter Console output channel. When enabled, detailed debug messages will be logged.",
+          "order": 7
+        },
         "jupyterConsole.advanced.viewerTerminalStartDelay": {
           "type": "number",
           "default": 1000,
           "description": "[Advanced] Delay (in milliseconds) before starting the output viewer terminal. Increase on slower machines.",
           "minimum": 0,
-          "order": 10
+          "order": 20
         },
         "jupyterConsole.advanced.consoleTerminalStartDelay": {
           "type": "number",
           "default": 1000,
           "description": "[Advanced] Delay (in milliseconds) before starting the console terminal. Allows time for conda/virtualenv activation to complete. Increase if activation commands appear in Jupyter Console.",
           "minimum": 0,
-          "order": 11
+          "order": 21
         },
         "jupyterConsole.advanced.kernelOperationWait": {
           "type": "number",
           "default": 1000,
           "description": "[Advanced] Wait time (in milliseconds) for kernel operations like restart. Increase on slower machines.",
           "minimum": 0,
-          "order": 12
+          "order": 22
         },
         "jupyterConsole.advanced.kernelConnectionTimeout": {
           "type": "number",
           "default": 10000,
           "description": "[Advanced] Timeout (in milliseconds) for kernel connection file to appear. Increase on slower machines.",
           "minimum": 1000,
-          "order": 13
+          "order": 23
         },
         "jupyterConsole.advanced.interruptTimeout": {
           "type": "number",
           "default": 3000,
           "description": "[Advanced] Timeout (in milliseconds) before force-killing an unresponsive kernel after interrupt. Useful for native code that doesn't respond to interrupts.",
           "minimum": 1000,
-          "order": 14
+          "order": 24
         },
         "jupyterConsole.advanced.consoleIsCompleteTimeout": {
           "type": "number",
           "default": 3600,
           "description": "[Advanced] Timeout (in seconds) for Jupyter Console to wait for kernel's is_complete response. If kernel is busy longer than this, multi-line editing may require multiple Enter presses. Increase for long-running computations.",
           "minimum": 1,
-          "order": 15
+          "order": 25
         }
       }
     },

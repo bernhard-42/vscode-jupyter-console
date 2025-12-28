@@ -147,7 +147,7 @@ export class KernelClient {
       this.shellSocket.routingId = socketIdentity;
       this.stdinSocket.routingId = socketIdentity;
 
-      Logger.log(`Socket identity set to: ${socketIdentity}`);
+      Logger.debug(`Socket identity set to: ${socketIdentity}`);
 
       // Connect sockets
       const shellAddr = `${this.connectionInfo.transport}://${this.connectionInfo.ip}:${this.connectionInfo.shell_port}`;
@@ -173,7 +173,7 @@ export class KernelClient {
       this.startIopubListener();
       this.startStdinListener();
 
-      Logger.log(`Connected to kernel: ${shellAddr}`);
+      Logger.info(`Connected to kernel: ${shellAddr}`);
 
       // Verify connection is working and iopub subscription is fully established
       // This solves the ZMQ "slow joiner" problem where early messages can be lost
@@ -271,7 +271,7 @@ export class KernelClient {
 
             // Handle output messages if callback registered
             if (callback) {
-              Logger.log(`Received message type: ${msgType}`);
+              Logger.debug(`Received message type: ${msgType}`);
 
               // Handle different output types
               if (msgType === "stream") {
@@ -300,7 +300,7 @@ export class KernelClient {
             ) {
               const completionCallback = this.completionCallbacks.get(parentMsgId);
               if (completionCallback) {
-                Logger.log("Execution complete, calling completion callback");
+                Logger.debug("Execution complete, calling completion callback");
                 completionCallback();
                 this.completionCallbacks.delete(parentMsgId);
                 this.outputCallbacks.delete(parentMsgId);
@@ -328,15 +328,15 @@ export class KernelClient {
     }
 
     this.stdinListenerRunning = true;
-    Logger.log("Starting stdin listener...");
+    Logger.debug("Starting stdin listener...");
 
     const handleMessage = async (msgParts: Buffer[]) => {
       try {
-        Logger.log(`Stdin: Received ${msgParts.length} message parts`);
+        Logger.debug(`Stdin: Received ${msgParts.length} message parts`);
 
         // Log first few parts to understand structure
         for (let i = 0; i < Math.min(msgParts.length, 3); i++) {
-          Logger.log(`  Part ${i}: ${msgParts[i].toString().substring(0, 50)}`);
+          Logger.debug(`  Part ${i}: ${msgParts[i].toString().substring(0, 50)}`);
         }
 
         // Find delimiter
@@ -345,11 +345,11 @@ export class KernelClient {
         );
 
         if (delimiterIdx === -1) {
-          Logger.log("Stdin: No delimiter found, skipping message");
+          Logger.debug("Stdin: No delimiter found, skipping message");
           return;
         }
 
-        Logger.log(`Stdin: Delimiter found at index ${delimiterIdx}`);
+        Logger.debug(`Stdin: Delimiter found at index ${delimiterIdx}`);
 
         const header = JSON.parse(msgParts[delimiterIdx + 2].toString());
         const parentHeader = JSON.parse(msgParts[delimiterIdx + 3].toString());
@@ -357,10 +357,10 @@ export class KernelClient {
         const content = JSON.parse(msgParts[delimiterIdx + 5].toString());
 
         const msgType = header.msg_type;
-        Logger.log(`Stdin: Received message type: ${msgType}`);
+        Logger.debug(`Stdin: Received message type: ${msgType}`);
 
         if (msgType === "input_request") {
-          Logger.log("Received input_request from kernel");
+          Logger.debug("Received input_request from kernel");
 
           // Get the prompt from the request
           const prompt = content.prompt || "Input:";
@@ -377,7 +377,7 @@ export class KernelClient {
             const listString = match[1];
             const items = listString.split(",").map((item: string) => item.trim());
 
-            Logger.log(`Detected select prompt with ${items.length} items`);
+            Logger.debug(`Detected select prompt with ${items.length} items`);
 
             // Show temporary status message for selection
             const statusDisposable = vscode.window.setStatusBarMessage(
@@ -396,7 +396,7 @@ export class KernelClient {
 
             // If user pressed ESC (selected is undefined), interrupt kernel
             if (selected === undefined) {
-              Logger.log("User cancelled selection with ESC - interrupting kernel execution");
+              Logger.debug("User cancelled selection with ESC - interrupting kernel execution");
               // Use VS Code command which triggers kernelManager.interruptKernel() (cross-platform)
               await vscode.commands.executeCommand("jupyterConsole.interruptKernel");
               return;
@@ -421,11 +421,11 @@ export class KernelClient {
             statusDisposable.dispose();
           }
 
-          Logger.log(`User input received: ${userInput !== undefined ? "(provided)" : "(cancelled)"}`);
+          Logger.debug(`User input received: ${userInput !== undefined ? "(provided)" : "(cancelled)"}`);
 
           // If user pressed ESC (userInput is undefined), interrupt kernel instead of sending empty reply
           if (userInput === undefined) {
-            Logger.log("User cancelled input with ESC - interrupting kernel execution");
+            Logger.debug("User cancelled input with ESC - interrupting kernel execution");
 
             // Interrupt the kernel execution using VS Code command
             // This triggers kernelManager.interruptKernel() which works cross-platform (including Windows)
@@ -445,7 +445,7 @@ export class KernelClient {
           );
 
           await this.sendMessage(this.stdinSocket!, reply);
-          Logger.log("Sent input_reply to kernel");
+          Logger.debug("Sent input_reply to kernel");
         }
       } catch (error: any) {
         Logger.error("Error processing stdin message:", error);
@@ -456,17 +456,17 @@ export class KernelClient {
       if (!this.stdinSocket) return;
 
       try {
-        Logger.log("Stdin listener: entering message loop");
+        Logger.debug("Stdin listener: entering message loop");
         for await (const msgParts of this.stdinSocket) {
           await handleMessage(msgParts);
         }
-        Logger.log("Stdin listener: exited message loop");
+        Logger.debug("Stdin listener: exited message loop");
       } catch (error) {
         Logger.error("Stdin listener error:", error);
       } finally {
         this.stdinListenerRunning = false;
         this.stdinListenerPromise = null;
-        Logger.log("Stdin listener stopped");
+        Logger.debug("Stdin listener stopped");
       }
     })();
   }
@@ -585,7 +585,7 @@ export class KernelClient {
 
       // Register completion callback
       const completionCallback = () => {
-        Logger.log("Received completion signal, resolving promise");
+        Logger.debug("Received completion signal, resolving promise");
 
         // Check if this execution had an error
         const hadError = this.executionErrors.get(msg.header.msg_id) || false;
@@ -599,8 +599,8 @@ export class KernelClient {
       this.completionCallbacks.set(msg.header.msg_id, completionCallback);
 
       // Send execute request
-      Logger.log(`Registering callbacks for msg_id: ${msg.header.msg_id}`);
-      Logger.log("Sending execute request to kernel");
+      Logger.debug(`Registering callbacks for msg_id: ${msg.header.msg_id}`);
+      Logger.debug("Sending execute request to kernel");
       this.sendMessage(this.shellSocket!, msg).catch(reject);
     });
   }
@@ -615,7 +615,7 @@ export class KernelClient {
 
     const msg = this.createMessage("interrupt_request", {});
 
-    Logger.log("Sending interrupt request to kernel");
+    Logger.debug("Sending interrupt request to kernel");
     await this.sendMessage(this.controlSocket, msg);
   }
 
@@ -630,7 +630,7 @@ export class KernelClient {
       throw new Error("Not connected to kernel");
     }
 
-    Logger.log("Verifying connection with kernel_info_request...");
+    Logger.debug("Verifying connection with kernel_info_request...");
 
     const msg = this.createMessage("kernel_info_request", {});
 
@@ -642,7 +642,7 @@ export class KernelClient {
     // ensuring the subscription is working before we continue
     await new Promise((resolve) => setTimeout(resolve, 100));
 
-    Logger.log("Connection verification complete");
+    Logger.debug("Connection verification complete");
   }
 
   /**
@@ -695,6 +695,6 @@ export class KernelClient {
       await this.stdinListenerPromise;
     }
 
-    Logger.log("Disconnected from kernel");
+    Logger.info("Disconnected from kernel");
   }
 }

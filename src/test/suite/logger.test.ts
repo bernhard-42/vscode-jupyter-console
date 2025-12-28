@@ -17,9 +17,15 @@ describe("Logger Test Suite", () => {
     });
   });
 
-  it("Logger.log should not throw", () => {
+  it("Logger.info should not throw", () => {
     assert.doesNotThrow(() => {
-      Logger.log("Test log message");
+      Logger.info("Test info message");
+    });
+  });
+
+  it("Logger.debug should not throw", () => {
+    assert.doesNotThrow(() => {
+      Logger.debug("Test debug message");
     });
   });
 
@@ -42,10 +48,17 @@ describe("Logger Test Suite", () => {
     });
   });
 
-  it("Logger.log should auto-initialize if not initialized", () => {
-    // This tests that log() calls initialize() if needed
+  it("Logger.info should auto-initialize if not initialized", () => {
+    // This tests that info() calls initialize() if needed
     assert.doesNotThrow(() => {
-      Logger.log("Auto-initialize test");
+      Logger.info("Auto-initialize test");
+    });
+  });
+
+  it("Logger.debug should auto-initialize if not initialized", () => {
+    // This tests that debug() calls initialize() if needed
+    assert.doesNotThrow(() => {
+      Logger.debug("Auto-initialize debug test");
     });
   });
 

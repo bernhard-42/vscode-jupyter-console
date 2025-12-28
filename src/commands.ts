@@ -50,13 +50,13 @@ export function registerCommands(
       async () => {
         if (ctx.kernelManager.isRunning()) {
           // Kernel is running -> Interrupt it
-          Logger.log("Status bar clicked: Interrupting kernel");
+          Logger.debug("Status bar clicked: Interrupting kernel");
           await vscode.commands.executeCommand(
             "jupyterConsole.interruptKernel"
           );
         } else {
           // Kernel is stopped -> Start it
-          Logger.log("Status bar clicked: Starting kernel");
+          Logger.debug("Status bar clicked: Starting kernel");
           await vscode.commands.executeCommand("jupyterConsole.startKernel");
         }
       }

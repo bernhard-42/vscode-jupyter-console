@@ -60,7 +60,7 @@ async function connectKernelClient(): Promise<void> {
     return currentKernelState === "busy";
   });
 
-  Logger.log("Kernel client connected");
+  Logger.info("Kernel client connected");
 
   // Save active editor to restore focus after starting console
   const activeEditor = vscode.window.activeTextEditor;
@@ -96,46 +96,46 @@ export async function activate(context: vscode.ExtensionContext) {
   // Initialize logger first
   try {
     Logger.initialize();
-    Logger.log("=== ACTIVATION START ===");
-    Logger.log("Starting activation...");
+    Logger.info("=== ACTIVATION START ===");
+    Logger.info("Starting activation...");
   } catch (e) {
     console.error("Failed to initialize logger:", e);
   }
 
   try {
     // Initialize managers with a default python path
-    Logger.log("Initializing managers...");
+    Logger.debug("Initializing managers...");
     kernelManager = new KernelManager("python3");
-    Logger.log("✓ KernelManager created");
+    Logger.debug("✓ KernelManager created");
 
     consoleManager = new ConsoleManager(kernelManager, context.extensionPath);
-    Logger.log("✓ ConsoleManager created");
+    Logger.debug("✓ ConsoleManager created");
 
     codeExecutor = new CodeExecutor(consoleManager);
-    Logger.log("✓ CodeExecutor created");
+    Logger.debug("✓ CodeExecutor created");
 
     statusBarManager = new StatusBarManager(kernelManager);
-    Logger.log("✓ StatusBarManager created");
+    Logger.debug("✓ StatusBarManager created");
 
     // Connect console manager to status bar manager for terminal visibility tracking
     statusBarManager.setConsoleManager(consoleManager);
-    Logger.log("✓ ConsoleManager linked to StatusBarManager");
+    Logger.debug("✓ ConsoleManager linked to StatusBarManager");
 
     // Detect and set Python environment on activation
-    Logger.log("Detecting Python environment...");
+    Logger.debug("Detecting Python environment...");
     const pythonPath = await getPythonPath();
-    Logger.log(`Python path detected: ${pythonPath}`);
+    Logger.info(`Python path detected: ${pythonPath}`);
     const PythonEnvName = await getPythonEnvName();
-    Logger.log(`Python env name: ${PythonEnvName}`);
+    Logger.info(`Python env name: ${PythonEnvName}`);
     await statusBarManager.updatePythonEnv();
-    Logger.log("✓ Python environment set in status bar");
+    Logger.info("✓ Python environment set in status bar");
 
     // Register status bar
     context.subscriptions.push(statusBarManager);
-    Logger.log("✓ Status bar registered");
+    Logger.debug("✓ Status bar registered");
 
     // Register all commands
-    Logger.log("Registering commands...");
+    Logger.debug("Registering commands...");
     registerCommands(context, {
       kernelManager,
       consoleManager,
@@ -149,10 +149,10 @@ export async function activate(context: vscode.ExtensionContext) {
       connectKernelClient,
       cleanupKernelClient,
     });
-    Logger.log("✓ All commands registered");
+    Logger.debug("✓ All commands registered");
 
     // Register CodeLens provider for cell markers
-    Logger.log("Registering CodeLens provider...");
+    Logger.debug("Registering CodeLens provider...");
     const codeLensProvider = new CellCodeLensProvider();
     context.subscriptions.push(
       vscode.languages.registerCodeLensProvider(
@@ -160,7 +160,7 @@ export async function activate(context: vscode.ExtensionContext) {
         codeLensProvider
       )
     );
-    Logger.log("✓ CodeLens provider registered");
+    Logger.debug("✓ CodeLens provider registered");
 
     // Listen for Python interpreter changes
     await registerPythonInterpreterListener(
@@ -170,9 +170,9 @@ export async function activate(context: vscode.ExtensionContext) {
       cleanupKernelClient
     );
 
-    Logger.log("✓ Activation complete - all commands registered");
-    Logger.log("Kernel actions button registered in editor/title");
-    Logger.log(`Button should appear when: editorLangId == python`);
+    Logger.info("✓ Activation complete - all commands registered");
+    Logger.debug("Kernel actions button registered in editor/title");
+    Logger.debug(`Button should appear when: editorLangId == python`);
   } catch (error) {
     Logger.error("Activation failed", error);
     vscode.window.showErrorMessage(
@@ -183,7 +183,7 @@ export async function activate(context: vscode.ExtensionContext) {
 }
 
 export async function deactivate() {
-  Logger.log("Deactivating extension...");
+  Logger.info("Deactivating extension...");
 
   // Clean up
   if (kernelClient) {
@@ -199,6 +199,6 @@ export async function deactivate() {
     await kernelManager.stopKernel();
   }
 
-  Logger.log("Deactivation complete");
+  Logger.info("Deactivation complete");
   Logger.dispose();
 }
