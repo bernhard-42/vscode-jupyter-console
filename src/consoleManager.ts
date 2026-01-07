@@ -209,7 +209,7 @@ export class ConsoleManager {
           const timeoutSeconds = getConsoleIsCompleteTimeout();
           const isCompleteTimeout = ` --ZMQTerminalInteractiveShell.kernel_is_complete_timeout=${timeoutSeconds}`;
 
-          const command = `"${pythonPath}" -m jupyter console${includeOtherOutput}${isCompleteTimeout} --existing "${connectionFile}"`;
+          const command = `"${pythonPath}" -m jupyter_console${includeOtherOutput}${isCompleteTimeout} --existing "${connectionFile}"`;
           this.consoleTerminal.sendText(command, true);
         }
       }, getConsoleTerminalStartDelay());
