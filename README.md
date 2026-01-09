@@ -194,6 +194,12 @@ _Increase these values on slower machines if you experience timeout errors._
 - [Extension Architecture](docs/architecture.md)
 - [Contributing](docs/contributing.md)
 
+## Changes
+
+v1.2.8
+
+- Call "jupyter_console" instead of "jupyter console"
+
 ## License
 
 MIT License - see [LICENSE](LICENSE) file for details.
